@@ -1,0 +1,4046 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "E-Commerce API",
+    "version": "1.0.0",
+    "description": "API documentation for the E-Commerce platform"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3300"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "token"
+      }
+    },
+    "schemas": {
+      "Product": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "stock": {
+            "type": "integer"
+          },
+          "category_id": {
+            "type": "integer"
+          },
+          "category_name": {
+            "type": "string"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "discount_percentage": {
+            "type": "number"
+          },
+          "discount_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ProductInput": {
+        "type": "object",
+        "required": [
+          "name",
+          "price",
+          "stock",
+          "category_id"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "stock": {
+            "type": "integer"
+          },
+          "category_id": {
+            "type": "integer"
+          },
+          "image_url": {
+            "type": "string"
+          },
+          "discount_percentage": {
+            "type": "number"
+          },
+          "discount_duration_days": {
+            "type": "integer"
+          }
+        }
+      },
+      "ProductStore": {
+        "type": "object",
+        "properties": {
+          "encrypted_id": {
+            "type": "string",
+            "example": "encrypted123"
+          },
+          "area": {
+            "type": "string"
+          },
+          "kode_toko": {
+            "type": "string"
+          },
+          "alamat": {
+            "type": "string"
+          },
+          "nomor_hp": {
+            "type": "string"
+          },
+          "website": {
+            "type": "string"
+          },
+          "link_map": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Wishlist_Tables": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "user_id": {
+            "type": "integer"
+          },
+          "product_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "deleted_at": {
+            "type": "date-time",
+            "format": "date-time"
+          }
+        }
+      },
+      "Wishlist_Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "example": "Successfully Created Data"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Wishlist_Tables"
+            },
+            "example": [
+              {
+                "id": 1,
+                "user_id": 123,
+                "product_id": "abc123",
+                "created_at": "2023-01-01T00:00:00Z",
+                "deleted_at": null
+              }
+            ]
+          }
+        }
+      }
+    },
+    "responses": {
+      "ProductStoreList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/ProductStore"
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "cookieAuth": []
+    }
+  ],
+  "paths": {
+    "/api/blog-posts": {
+      "get": {
+        "summary": "Ambil semua blog post",
+        "tags": [
+          "BlogPosts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List blog post"
+          }
+        }
+      },
+      "post": {
+        "summary": "Menambahkan artikel blog baru dengan validasi slug unik",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Cara Membuat Aplikasi React"
+                  },
+                  "content": {
+                    "type": "string",
+                    "example": "Ini adalah contoh artikel yang membahas cara membuat aplikasi menggunakan React."
+                  },
+                  "category_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "author_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "image_main_url": {
+                    "type": "string"
+                  },
+                  "image_thumbnail_url": {
+                    "type": "string"
+                  },
+                  "image_banner_url": {
+                    "type": "string"
+                  },
+                  "image_meta_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Artikel berhasil ditambahkan"
+          },
+          "400": {
+            "description": "Slug sudah digunakan"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/{id}": {
+      "put": {
+        "summary": "Memperbarui artikel blog dengan validasi slug unik",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "example": "Cara Membuat Aplikasi React"
+                  },
+                  "content": {
+                    "type": "string",
+                    "example": "Ini adalah contoh artikel yang membahas cara membuat aplikasi menggunakan React."
+                  },
+                  "category_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "author_id": {
+                    "type": "integer",
+                    "example": 1
+                  },
+                  "image_main_url": {
+                    "type": "string"
+                  },
+                  "image_thumbnail_url": {
+                    "type": "string"
+                  },
+                  "image_banner_url": {
+                    "type": "string"
+                  },
+                  "image_meta_url": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Artikel berhasil diperbarui"
+          },
+          "400": {
+            "description": "Slug sudah digunakan"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Hapus blog post (soft delete)",
+        "tags": [
+          "BlogPosts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog post berhasil dihapus"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/{postId}/tags": {
+      "post": {
+        "summary": "Menambahkan tag ke artikel",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "ID artikel"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tagIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag berhasil ditambahkan ke artikel"
+          }
+        }
+      },
+      "get": {
+        "summary": "Mendapatkan semua tag dari sebuah artikel",
+        "tags": [
+          "Blog Posts"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "ID artikel"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar tag"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/{postId}/comments": {
+      "post": {
+        "summary": "Menambahkan komentar ke artikel",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "comment": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Komentar berhasil ditambahkan"
+          }
+        }
+      },
+      "get": {
+        "summary": "Mendapatkan komentar dari artikel",
+        "tags": [
+          "Blog Posts"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar komentar"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/comments/{commentId}": {
+      "delete": {
+        "summary": "Menghapus komentar pada artikel (soft delete)",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "commentId",
+            "schema": {
+              "type": "integer"
+            },
+            "required": true,
+            "description": "ID komentar yang akan dihapus"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Komentar berhasil dihapus"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/stats/category": {
+      "get": {
+        "summary": "Statistik jumlah artikel per kategori",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/stats/author": {
+      "get": {
+        "summary": "Statistik jumlah artikel per author",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik berhasil diambil"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/statistics/category": {
+      "get": {
+        "summary": "Menampilkan statistik jumlah artikel per kategori",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik jumlah artikel per kategori",
+            "content": {
+              "application/json": null,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "category_id": {
+                      "type": "integer"
+                    },
+                    "category_name": {
+                      "type": "string"
+                    },
+                    "article_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "example": {
+                    "category_id": 1,
+                    "category_name": "Teknologi",
+                    "article_count": 10
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blog-posts/statistics/author": {
+      "get": {
+        "summary": "Menampilkan statistik jumlah artikel per author",
+        "tags": [
+          "Blog Posts"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistik jumlah artikel per author",
+            "content": {
+              "application/json": null,
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "author_id": {
+                      "type": "integer"
+                    },
+                    "author_name": {
+                      "type": "string"
+                    },
+                    "article_count": {
+                      "type": "integer"
+                    }
+                  },
+                  "example": {
+                    "author_id": 1,
+                    "author_name": "John Doe",
+                    "article_count": 5
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/blog-posts/status/{status}": {
+      "get": {
+        "summary": "Menampilkan artikel berdasarkan status publish",
+        "tags": [
+          "Blog Posts"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "status",
+            "required": true,
+            "description": "Status publish artikel yang ingin difilter (draft, publish, deleted)",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "publish",
+                "deleted"
+              ]
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artikel dengan status publish tertentu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BlogPost"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Status tidak valid"
+          },
+          "404": {
+            "description": "Tidak ada artikel ditemukan dengan status tersebut"
+          },
+          "500": {
+            "description": "Terjadi kesalahan saat mengambil artikel"
+          }
+        }
+      }
+    },
+    "/api/blog-posts/{post_id}/tags": {
+      "delete": {
+        "summary": "Menghapus tag dari artikel blog",
+        "tags": [
+          "Blog Posts"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "post_id",
+            "required": true,
+            "description": "ID artikel yang tag-nya akan dihapus",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tag_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    },
+                    "description": "Daftar ID tag yang akan dihapus",
+                    "example": [
+                      1,
+                      2
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tag berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Tag berhasil dihapus dari artikel blog"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request tidak lengkap atau format salah"
+          },
+          "500": {
+            "description": "Terjadi kesalahan pada server"
+          }
+        }
+      }
+    },
+    "/api/cart": {
+      "get": {
+        "summary": "Get all cart items for the authenticated user",
+        "tags": [
+          "Cart"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cart items"
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a product to the cart",
+        "tags": [
+          "Cart"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "integer"
+                  },
+                  "quantity": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "product_id",
+                  "quantity"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Cart item added"
+          }
+        }
+      }
+    },
+    "/api/cart/{id}": {
+      "delete": {
+        "summary": "Soft delete a cart item",
+        "tags": [
+          "Cart"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Cart item ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cart item soft deleted"
+          }
+        }
+      }
+    },
+    "/api/categories": {
+      "get": {
+        "summary": "Get all categories",
+        "tags": [
+          "Categories"
+        ]
+      },
+      "post": {
+        "summary": "Create a new category",
+        "tags": [
+          "Categories"
+        ]
+      }
+    },
+    "/api/categories/{id}": {
+      "get": {
+        "summary": "Get category by ID",
+        "tags": [
+          "Categories"
+        ]
+      },
+      "put": {
+        "summary": "Update a category",
+        "tags": [
+          "Categories"
+        ]
+      },
+      "delete": {
+        "summary": "Soft delete a category",
+        "tags": [
+          "Categories"
+        ]
+      }
+    },
+    "/api/coupons": {
+      "post": {
+        "summary": "Tambahkan kupon baru",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "discount_percentage"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "example": "DISKON50"
+                  },
+                  "discount_percentage": {
+                    "type": "integer",
+                    "example": 50
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Ambil semua kupon yang masih aktif (belum soft delete)",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/coupons-publish": {
+      "get": {
+        "summary": "Ambil semua kupon yang masih aktif, untuk ditampilkan ke user (belum soft delete)",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/coupons/{code}": {
+      "get": {
+        "summary": "Ambil detail kupon berdasarkan kode",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Kode kupon"
+          }
+        ]
+      }
+    },
+    "/api/coupons/{id}": {
+      "put": {
+        "summary": "Update an existing coupon",
+        "description": "Update the details of an existing coupon, including code, discount percentage, validity, usage limits, and status.",
+        "tags": [
+          "Coupons"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "The coupon ID",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "The unique code for the coupon"
+                  },
+                  "discount_percentage": {
+                    "type": "integer",
+                    "description": "Discount percentage (1-100)"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The start date for coupon validity"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "The end date for coupon validity"
+                  },
+                  "usage_limit": {
+                    "type": "integer",
+                    "description": "The maximum number of uses for this coupon"
+                  },
+                  "usage_count": {
+                    "type": "integer",
+                    "description": "The current number of times the coupon has been used"
+                  },
+                  "status_publish": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ],
+                    "description": "Status indicating whether the coupon is available for use"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ],
+                    "description": "The internal status of the coupon (active or inactive)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coupon updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Coupon updated successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Invalid discount percentage"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Coupon not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Coupon not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Hapus kupon (soft delete)",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID kupon"
+          }
+        ]
+      }
+    },
+    "/api/validate-coupon": {
+      "get": {
+        "summary": "Validasi kupon",
+        "tags": [
+          "Coupons"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Kode kupon yang ingin divalidasi"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kupon valid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "coupon": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "code": {
+                          "type": "string",
+                          "example": "DISKON50"
+                        },
+                        "discount_percentage": {
+                          "type": "integer",
+                          "example": 50
+                        },
+                        "valid_from": {
+                          "type": "string",
+                          "format": "date",
+                          "example": "2025-04-01"
+                        },
+                        "valid_until": {
+                          "type": "string",
+                          "format": "date",
+                          "example": "2025-04-30"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameter code tidak diberikan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Kode kupon diperlukan"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kupon tidak ditemukan atau sudah tidak aktif",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Kupon tidak ditemukan atau sudah tidak aktif"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/general-settings": {
+      "get": {
+        "summary": "Get general settings",
+        "tags": [
+          "GeneralSettings"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "General settings data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "The settings data"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "summary": "Update general settings",
+        "tags": [
+          "GeneralSettings"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "link_instagram": "https://instagram.com/yourstore",
+                  "link_whatsapp": "https://wa.me/628123456789",
+                  "alamat": "Jl. Contoh No. 123",
+                  "email": "store@example.com",
+                  "service_fee_mode": "buyer",
+                  "waktu_operasi_toko": "08:00 - 17:00"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Settings updated or created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ld/home": {
+      "get": {
+        "summary": "Get Little dimple",
+        "tags": [
+          "Little Dimple"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Little dimple data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "description": "The settings data"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ld/contact-us": {
+      "post": {
+        "summary": "Submit a contact us message",
+        "tags": [
+          "Little Dimple"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "email",
+                  "subject",
+                  "message"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "subject": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Contact message submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "contact": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "phone": {
+                          "type": "string"
+                        },
+                        "subject": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/ld/warranty": {
+      "post": {
+        "summary": "Check if warranty exists by code",
+        "tags": [
+          "Warranty"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "kode_warranty": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kode_warranty"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Warranty found or not found"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/ld/manual-warranty": {
+      "post": {
+        "summary": "Insert manual warranty data",
+        "tags": [
+          "Warranty"
+        ],
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "nohp": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "province": {
+                    "type": "string"
+                  },
+                  "city": {
+                    "type": "string"
+                  },
+                  "district": {
+                    "type": "string"
+                  },
+                  "subdistrict": {
+                    "type": "string"
+                  },
+                  "postalcode": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "attachment_receipt": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "attachment_barcode": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "attachment_product": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Manual warranty submitted successfully"
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "summary": "Create a new order transaction",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "total_price": {
+                    "type": "number",
+                    "example": 50000
+                  },
+                  "shipping_address": {
+                    "type": "string",
+                    "example": "Jl. Merdeka No.123"
+                  },
+                  "payment_method": {
+                    "type": "string",
+                    "example": "VA"
+                  },
+                  "payment_method_channel": {
+                    "type": "string",
+                    "example": "BCA"
+                  },
+                  "shipping_service": {
+                    "type": "string",
+                    "example": "JNE REG"
+                  },
+                  "shipping_cost": {
+                    "type": "number",
+                    "example": 9000
+                  },
+                  "shipping_etd": {
+                    "type": "string",
+                    "example": "2-3 hari"
+                  },
+                  "receiver_name": {
+                    "type": "string",
+                    "example": "Budi Santoso"
+                  },
+                  "receiver_phone": {
+                    "type": "string",
+                    "example": "08123456789"
+                  },
+                  "receiver_address_detail": {
+                    "type": "string",
+                    "example": "RT 03 / RW 05, dekat warung bu Sari"
+                  },
+                  "receiver_subdistrict_id": {
+                    "type": "integer",
+                    "example": 123456
+                  },
+                  "receiver_subdistrict_name": {
+                    "type": "string",
+                    "example": "Cempaka Putih"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "product_id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "example": 2
+                        },
+                        "price": {
+                          "type": "number",
+                          "example": 25000
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all orders",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/api/orders/me": {
+      "get": {
+        "summary": "Get all orders by authenticated user",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/api/orders/payment-status": {
+      "post": {
+        "summary": "Query payment status",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transaction_id": {
+                    "type": "string",
+                    "example": "TXN-123456789"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orders/cancel-payment": {
+      "post": {
+        "summary": "Cancel a payment",
+        "tags": [
+          "Orders"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "transaction_id": {
+                    "type": "string",
+                    "example": "TXN-123456789"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment canceled successfully"
+          },
+          "400": {
+            "description": "Invalid transaction ID or cancellation failed"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/product-images": {
+      "post": {
+        "summary": "Upload product images",
+        "tags": [
+          "ProductImages"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "product_id": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": [
+                      "main",
+                      "thumbnail",
+                      "gallery",
+                      "zoom"
+                    ]
+                  },
+                  "is_main": {
+                    "type": "boolean"
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Images uploaded and processed successfully"
+          }
+        }
+      }
+    },
+    "/api/product-images/{productId}": {
+      "get": {
+        "summary": "Get images by product ID",
+        "tags": [
+          "ProductImages"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of product images"
+          }
+        }
+      }
+    },
+    "/api/product-images/{id}": {
+      "delete": {
+        "summary": "Soft delete product image",
+        "tags": [
+          "ProductImages"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image soft deleted"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a product image",
+        "tags": [
+          "ProductImages"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The ID of the product image to update"
+          },
+          {
+            "in": "formData",
+            "name": "category",
+            "type": "string",
+            "enum": [
+              "main",
+              "thumbnail",
+              "gallery",
+              "zoom"
+            ],
+            "description": "The category of the image"
+          },
+          {
+            "in": "formData",
+            "name": "is_main",
+            "type": "boolean",
+            "description": "Whether this image is the main image"
+          },
+          {
+            "in": "formData",
+            "name": "images",
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image updated successfully"
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "404": {
+            "description": "Product image not found"
+          }
+        }
+      }
+    },
+    "/api/products": {
+      "get": {
+        "summary": "Get all products with optional filtering and pagination",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of products per page"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by category ID"
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Keyword to search in product name or description"
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popular",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "newest"
+            },
+            "description": "Sort products by criteria popular (highest rating), newest (created_at), price_asc (low to high), price_desc (high to low)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page number"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Number of products per page"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new product",
+        "tags": [
+          "Products"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Product created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "product": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/hot": {
+      "get": {
+        "summary": "Get all products with optional filtering and pagination",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of products per page"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by category ID"
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Keyword to search in product name or description"
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popular",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "newest"
+            },
+            "description": "Sort products by criteria popular (highest rating), newest (created_at), price_asc (low to high), price_desc (high to low)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page number"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Number of products per page"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/new": {
+      "get": {
+        "summary": "Get all products with optional filtering and pagination",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of products per page"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by category ID"
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Keyword to search in product name or description"
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popular",
+                "newest",
+                "price_asc",
+                "price_desc"
+              ],
+              "default": "newest"
+            },
+            "description": "Sort products by criteria popular (highest rating), newest (created_at), price_asc (low to high), price_desc (high to low)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of products with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "products": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Product"
+                      }
+                    },
+                    "page": {
+                      "type": "integer",
+                      "description": "Current page number"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "description": "Number of products per page"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/products/id/{id}": {
+      "get": {
+        "summary": "Get product by ID",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "product": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/products/slug/{slug}": {
+      "get": {
+        "summary": "Get product by Slug",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "product": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Product not found"
+          }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "put": {
+        "summary": "Update a product by ID",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Product updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "product": {
+                      "$ref": "#/components/schemas/Product"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Soft delete a product by ID",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Product soft-deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stores": {
+      "post": {
+        "summary": "Create a new product store",
+        "tags": [
+          "Product Store"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "area",
+                  "kode_toko"
+                ],
+                "properties": {
+                  "area": {
+                    "type": "string"
+                  },
+                  "kode_toko": {
+                    "type": "string"
+                  },
+                  "alamat": {
+                    "type": "string"
+                  },
+                  "nomor_hp": {
+                    "type": "string"
+                  },
+                  "website": {
+                    "type": "string"
+                  },
+                  "link_map": {
+                    "type": "string"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Store created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductStore"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all product stores",
+        "tags": [
+          "Product Store"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A list of stores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/responses/ProductStoreList"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/stores/{id}": {
+      "get": {
+        "summary": "Get a store by ID",
+        "tags": [
+          "Product Store"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted store ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductStore"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Store not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a store by ID",
+        "tags": [
+          "Product Store"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted store ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "area": {
+                    "type": "string"
+                  },
+                  "alamat": {
+                    "type": "string"
+                  },
+                  "nomor_hp": {
+                    "type": "string"
+                  },
+                  "website": {
+                    "type": "string"
+                  },
+                  "link_map": {
+                    "type": "string"
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Store updated successfully"
+          },
+          "404": {
+            "description": "Store not found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Soft delete a store by setting active to false",
+        "tags": [
+          "Product Store"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted store ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Store soft deleted"
+          },
+          "404": {
+            "description": "Store not found"
+          }
+        }
+      }
+    },
+    "/api/reports/total-revenue": {
+      "get": {
+        "summary": "Get total revenue",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Total revenue fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/total-orders": {
+      "get": {
+        "summary": "Get total number of orders",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Total orders fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/average-order-value": {
+      "get": {
+        "summary": "Get average order value",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Average order value fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/revenue-per-day": {
+      "get": {
+        "summary": "Get revenue per day",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Revenue per day fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/new-customers": {
+      "get": {
+        "summary": "Get number of new customers in last 30 days",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "New customers fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/active-customers": {
+      "get": {
+        "summary": "Get number of active customers",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Active customers fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/product-sales": {
+      "get": {
+        "summary": "Get product sales data",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Product sales fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/low-stock-products": {
+      "get": {
+        "summary": "Get products with low stock",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Low stock products fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/out-of-stock-products": {
+      "get": {
+        "summary": "Get out of stock products",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Out of stock products fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/top-selling-products": {
+      "get": {
+        "summary": "Get top 5 selling products",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Top selling products fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/coupon-usage": {
+      "get": {
+        "summary": "Get coupon usage count",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon usage fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/voucher-usage": {
+      "get": {
+        "summary": "Get voucher usage count",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Voucher usage fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/shipping-usage": {
+      "get": {
+        "summary": "Get shipping service usage data",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Shipping usage fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/average-delivery-time": {
+      "get": {
+        "summary": "Get average delivery time in hours",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Average delivery time fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/delivery-status": {
+      "get": {
+        "summary": "Get delivery status breakdown",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Delivery status fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/fulfillment-rate": {
+      "get": {
+        "summary": "Get order fulfillment rate",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Fulfillment rate fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/refund-requests": {
+      "get": {
+        "summary": "Get refund request count",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Refund requests fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/return-rate": {
+      "get": {
+        "summary": "Get return rate",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Return rate fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/page-views": {
+      "get": {
+        "summary": "Get total page views",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Page views fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/product-views": {
+      "get": {
+        "summary": "Get product views count per product",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Product views fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/top-articles": {
+      "get": {
+        "summary": "Get top 5 most viewed articles",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Top articles fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/blog-views": {
+      "get": {
+        "summary": "Get total blog views",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog views fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/blog-comments": {
+      "get": {
+        "summary": "Get total blog comments",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Blog comments fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/engagement-rate": {
+      "get": {
+        "summary": "Get blog engagement rate",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "Engagement rate fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "summary": "Create a new product review using product slug",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "slug",
+                  "rating"
+                ],
+                "properties": {
+                  "slug": {
+                    "type": "string",
+                    "example": "produk-keren"
+                  },
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 4
+                  },
+                  "review": {
+                    "type": "string",
+                    "example": "Produk sangat bagus dan cepat sampai."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get paginated reviews by authenticated user (optionally filtered by product slug)",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of items per page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of paginated reviews"
+          }
+        }
+      }
+    },
+    "/api/reviews/slug/{slug}": {
+      "get": {
+        "summary": "Get paginated reviews by authenticated user (optionally filtered by product slug)",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number"
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "Number of items per page"
+          },
+          {
+            "in": "query",
+            "name": "slug",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Product slug to filter reviews by product"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of paginated reviews"
+          }
+        }
+      }
+    },
+    "/api/reviews/{slug}": {
+      "delete": {
+        "summary": "Soft delete a review by product slug",
+        "tags": [
+          "Reviews"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Product slug"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Review deleted"
+          },
+          "404": {
+            "description": "Review or product not found or unauthorized"
+          }
+        }
+      }
+    },
+    "/api/shipping/provinces": {
+      "get": {
+        "summary": "Get all provinces",
+        "tags": [
+          "Shipping"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of provinces"
+          }
+        }
+      }
+    },
+    "/api/shipping/cities": {
+      "get": {
+        "summary": "Get cities by province",
+        "tags": [
+          "Shipping"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "province",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Province ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of cities"
+          },
+          "400": {
+            "description": "Province query is required"
+          }
+        }
+      }
+    },
+    "/api/shipping/subdistricts": {
+      "get": {
+        "summary": "Get subdistricts by city",
+        "tags": [
+          "Shipping"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "City ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of subdistricts"
+          },
+          "400": {
+            "description": "City query is required"
+          }
+        }
+      }
+    },
+    "/api/shipping/couriers": {
+      "get": {
+        "summary": "Get list of available couriers",
+        "tags": [
+          "Shipping"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of couriers"
+          }
+        }
+      }
+    },
+    "/api/shipping/track": {
+      "post": {
+        "summary": "Track a shipment by waybill number and courier",
+        "tags": [
+          "Shipping"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "waybill": {
+                    "type": "string",
+                    "example": "1234567890"
+                  },
+                  "courier": {
+                    "type": "string",
+                    "example": "jne"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tracking result"
+          },
+          "400": {
+            "description": "waybill and courier are required"
+          },
+          "500": {
+            "description": "Failed to track shipment"
+          }
+        }
+      }
+    },
+    "/api/users/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "email",
+                  "password",
+                  "full_name"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  },
+                  "full_name": {
+                    "type": "string"
+                  },
+                  "dob": {
+                    "type": "string"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "type": "string"
+                  },
+                  "province_id": {
+                    "type": "string"
+                  },
+                  "province_name": {
+                    "type": "string"
+                  },
+                  "city_id": {
+                    "type": "string"
+                  },
+                  "city_name": {
+                    "type": "string"
+                  },
+                  "subdistrict_id": {
+                    "type": "string"
+                  },
+                  "subdistrict_name": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully"
+          },
+          "400": {
+            "description": "Email already exists"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/login": {
+      "post": {
+        "summary": "Login a user",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "example": "admin@domain.com"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "admin1234"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/logout": {
+      "post": {
+        "summary": "Logout a user",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout successful"
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "summary": "Get user profile",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User profile retrieved successfully"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "delete": {
+        "summary": "Soft delete a user",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "User ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User soft-deleted successfully"
+          },
+          "404": {
+            "description": "User not found or already deleted"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/send-verification": {
+      "post": {
+        "summary": "Send verification email if not verified",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Verification email sent"
+          },
+          "400": {
+            "description": "Email already verified"
+          },
+          "404": {
+            "description": "Email not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/verify-email/{token}": {
+      "get": {
+        "summary": "Verify email using token",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Email verified successfully"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        }
+      }
+    },
+    "/api/users/forgot-password": {
+      "post": {
+        "summary": "Request password reset email",
+        "tags": [
+          "Users"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset email sent successfully"
+          },
+          "404": {
+            "description": "Email not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/users/reset-password/{token}": {
+      "post": {
+        "summary": "Reset user password using token",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "password"
+                ],
+                "properties": {
+                  "password": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password successfully updated"
+          },
+          "400": {
+            "description": "Invalid or expired token"
+          },
+          "404": {
+            "description": "User not found"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/vouchers": {
+      "post": {
+        "summary": "Create a new voucher",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "discount",
+                  "valid_from",
+                  "valid_until"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "type": "number"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all available vouchers",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of vouchers"
+          }
+        }
+      }
+    },
+    "/api/vouchers/me": {
+      "get": {
+        "summary": "Get available vouchers member",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of vouchers"
+          }
+        }
+      }
+    },
+    "/api/vouchers-publish": {
+      "get": {
+        "summary": "Get all available vouchers",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of vouchers"
+          }
+        }
+      }
+    },
+    "/api/vouchers/{id}": {
+      "delete": {
+        "summary": "Soft delete a voucher",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voucher deleted"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a voucher",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "discount": {
+                    "type": "number"
+                  },
+                  "valid_from": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "valid_until": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/vouchers/code/{code}": {
+      "get": {
+        "summary": "Get voucher by code",
+        "tags": [
+          "Vouchers"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voucher found"
+          }
+        }
+      }
+    },
+    "/api/voucher/validate": {
+      "get": {
+        "summary": "Validasi voucher berdasarkan kode dan (opsional) user ID",
+        "tags": [
+          "Voucher"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "Kode voucher"
+          },
+          {
+            "in": "query",
+            "name": "userId",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "required": false,
+            "description": "ID user (jika voucher bersifat personal)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Validasi voucher berhasil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "voucher": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "code": {
+                          "type": "string",
+                          "example": "VOUCHER50K"
+                        },
+                        "discount_amount": {
+                          "type": "number",
+                          "format": "float",
+                          "example": 50000
+                        },
+                        "min_purchase": {
+                          "type": "number",
+                          "format": "float",
+                          "example": 100000
+                        },
+                        "valid_from": {
+                          "type": "string",
+                          "format": "date",
+                          "example": "2025-04-01"
+                        },
+                        "valid_until": {
+                          "type": "string",
+                          "format": "date",
+                          "example": "2025-04-30"
+                        },
+                        "user_id": {
+                          "type": "integer",
+                          "nullable": true,
+                          "example": null
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Voucher tidak valid atau tidak ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Voucher tidak ditemukan, sudah digunakan, atau tidak berlaku untuk user ini"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Terjadi kesalahan internal saat validasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "valid": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Terjadi kesalahan saat memvalidasi voucher"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/wishlist": {
+      "post": {
+        "summary": "Tambahkan produk ke wishlist pengguna",
+        "tags": [
+          "Wishlist"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "product_id"
+                ],
+                "properties": {
+                  "product_id": {
+                    "type": "string",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Ambil daftar wishlist semua pengguna",
+        "tags": [
+          "Wishlist"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wishlist/me": {
+      "get": {
+        "summary": "Ambil daftar wishlist pengguna yang masih aktif",
+        "tags": [
+          "Wishlist"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ]
+      }
+    },
+    "/api/wishlist/{id}": {
+      "delete": {
+        "summary": "Hapus wishlist (soft delete)",
+        "tags": [
+          "Wishlist"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID wishlist"
+          }
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "BlogPosts",
+      "description": "Manajemen artikel/blog post"
+    },
+    {
+      "name": "Cart",
+      "description": "Shopping cart operations"
+    },
+    {
+      "name": "Categories",
+      "description": "Category management"
+    },
+    {
+      "name": "GeneralSettings",
+      "description": "Manage general settings of the platform"
+    },
+    {
+      "name": "Little Dimple",
+      "description": "Manage Little dimple of the platform"
+    },
+    {
+      "name": "Orders",
+      "description": "Order transactions"
+    },
+    {
+      "name": "ProductImages",
+      "description": "Product image management"
+    },
+    {
+      "name": "Shipping",
+      "description": "RajaOngkir API Integration"
+    },
+    {
+      "name": "Users",
+      "description": "User management"
+    },
+    {
+      "name": "Vouchers",
+      "description": "Voucher management"
+    }
+  ]
+}
