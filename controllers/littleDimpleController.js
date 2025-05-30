@@ -193,6 +193,8 @@ module.exports = {
       // 2. Send Email
       const transporter = nodemailer.createTransport({
         service: 'gmail', // or your preferred SMTP provider
+        port: 587,         // Change from 465 to 587
+        secure: false,
         auth: {
           user: process.env.EMAIL_USER, // your email address
           pass: process.env.EMAIL_PASS, // your email app password
