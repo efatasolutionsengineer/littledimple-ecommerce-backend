@@ -13,7 +13,7 @@ const sendVerificationEmail = async (to, token) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to,
-    subject: 'Verifikasi Email Anda',
+    subject: '[Little Dimple] Verifikasi Email Anda',
     html: `<p>Klik link berikut untuk verifikasi email:</p>
            <a href="${verificationUrl}">${verificationUrl}</a>`
   };

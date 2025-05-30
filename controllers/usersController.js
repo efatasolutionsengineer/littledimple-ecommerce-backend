@@ -120,6 +120,65 @@ module.exports = {
 
             user.id = encryptId(user.id);
 
+            const token = jwt.sign({ email: encryptId(user.email) }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            await sendVerificationEmail(user.email, token);
+
+            try {
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS,
+                    },
+                });
+                
+                const welcomeMailOptions = {
+                    from: process.env.EMAIL_USER,
+                    to: user.email,
+                    subject: 'Selamat Datang di Little Dimple Ecommerce!',
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+                            <h2 style="color: #333; border-bottom: 1px solid #ccc; padding-bottom: 10px;">🎉 Selamat Datang di Little Dimple Ecommerce!</h2>
+                            
+                            <p>Halo ${full_name || username},</p>
+                            
+                            <p>Terima kasih telah mendaftar di Little Dimple Ecommerce. Kami senang Anda bergabung dengan komunitas kami!</p>
+                            
+                            <div style="background-color: #fff; padding: 15px; border: 1px solid #eee; border-radius: 5px; margin: 20px 0;">
+                                <p><strong>Detail akun Anda:</strong></p>
+                                <p>Nama: ${full_name || username}</p>
+                                <p>Email: ${email}</p>
+                                <p>Akun dibuat pada: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}</p>
+                            </div>
+                            
+                            <p>Anda sekarang dapat berbelanja produk terbaru kami, melacak pesanan Anda, dan menikmati pengalaman berbelanja yang dipersonalisasi.</p>
+                            
+                            <div style="margin: 30px 0; text-align: center;">
+                                <a href="${process.env.FRONTEND_URL || 'https://littledimple.com'}" style="background-color: #4CAF50; color: white; padding: 12px 25px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Kunjungi Toko Kami</a>
+                            </div>
+                            
+                            <p>Jika Anda memiliki pertanyaan atau membutuhkan bantuan, jangan ragu untuk menghubungi tim layanan pelanggan kami.</p>
+                            
+                            <p>Selamat berbelanja!</p>
+                            
+                            <p>Salam hangat,<br>Tim Little Dimple</p>
+                            
+                            <hr style="margin: 30px 0; border: none; border-top: 1px solid #ddd;">
+                            <small style="color: #999;">Ini adalah pesan otomatis. Mohon tidak membalas email ini.</small>
+                        </div>
+                    `,
+                };
+                
+                // Send welcome email without awaiting (non-blocking)
+                transporter.sendMail(welcomeMailOptions)
+                    .then(() => console.log(`Welcome email sent to ${email}`))
+                    .catch(error => console.warn(`Failed to send welcome email to ${email}: ${error.message}`));
+                    
+            } catch (emailError) {
+                // Just log the error and continue - welcome email is non-mandatory
+                console.warn(`Error preparing welcome email for ${email}: ${emailError.message}`);
+            }
+
             return res.status(201).json({
             code: "",
             status: "success",
@@ -134,7 +193,7 @@ module.exports = {
             data: []
             });
         }
-        },
+    },
     
 
     /**
@@ -316,7 +375,7 @@ module.exports = {
             if (!user) return res.status(404).json({ message: 'Email tidak ditemukan' });
             if (user.is_verified_email) return res.status(400).json({ message: 'Email sudah diverifikasi' });
         
-            const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: '1d' });
+            const token = jwt.sign({ email: encryptId(user.email) }, process.env.JWT_SECRET, { expiresIn: '1d' });
             await sendVerificationEmail(user.email, token);
         
             res.json({ message: 'Email verifikasi telah dikirim' });
@@ -348,7 +407,7 @@ module.exports = {
     verifyEmail: async (req, res) => {
         try {
         const decoded = jwt.verify(req.params.token, process.env.JWT_SECRET);
-        const email = decoded.email;
+        const email = decryptId(decoded.email);
     
         const updated = await knex('users')
             .where({ email })

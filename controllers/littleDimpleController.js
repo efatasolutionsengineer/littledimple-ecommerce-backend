@@ -201,7 +201,7 @@ module.exports = {
 
       const mailOptions = {
         from: process.env.EMAIL_USER,
-        to: 'your-team@yourdomain.com', // receiver email
+        to: process.env.RECEIVER_EMAIL_CONTACTUS, // receiver email
         subject: `New Contact Us Submission: ${subject}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
