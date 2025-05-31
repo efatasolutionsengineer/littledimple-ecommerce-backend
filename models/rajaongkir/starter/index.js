@@ -22,6 +22,7 @@ function init(apiKey) {
 
 // Helper function for making requests
 function makeRequest(uri, method = 'GET', form = null) {
+  console.log(uri)
   return new Promise(function (resolve, reject) {
     const options = {
       uri: uri,
@@ -61,6 +62,7 @@ module.exports = {
   // Province methods
   getProvinces() {
     const uri = config.httpUri + '/province'
+    console.log(uri)
     return makeRequest(uri)
   },
 

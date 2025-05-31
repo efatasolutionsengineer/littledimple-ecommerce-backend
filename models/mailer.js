@@ -11,6 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = async (to, token) => {
+  // Frontend must be: /verify-email
   const verificationUrl = `${process.env.APP_URL}/api/users/verify-email/${token}`;
   const mailOptions = {
     from: process.env.EMAIL_USER,
@@ -25,11 +26,12 @@ const sendVerificationEmail = async (to, token) => {
 
 // Send verification email
 const sendPasswordResetEmail = (email, token) => {
-  const resetLink = `${process.env.FRONTEND_URL}/reset-password/${token}`;
+  // Frontend must be: /reset-password
+  const resetLink = `${process.env.APP_URL}/api/users/reset-password/${token}`;
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Password Reset Request',
+    subject: '[Little Dimple] Password Reset Request',
     text: `Click the following link to reset your password: ${resetLink}`,
   };
 

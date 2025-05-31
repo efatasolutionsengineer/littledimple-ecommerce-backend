@@ -73,4 +73,14 @@ router.post('/waybill/jet', rajaongkirController.getJETWaybill);
 router.post('/waybill/dse', rajaongkirController.getDSEWaybill);
 router.post('/waybill/first', rajaongkirController.getFirstWaybill);
 
+
+router.get('/area/provinsi', rajaongkirController.getProvinceLocal);
+router.get('/area/kabupaten', rajaongkirController.getKabupatenLocal);
+router.get('/area/kecamatan', rajaongkirController.getKecamatanLocal);
+router.get('/area/kelurahan', rajaongkirController.getKelurahanLocal);
+
+// In your routes file
+router.post('/postal-code/search', rajaongkirController.getNominatimPostalCode);
+router.post('/calculate/domestic-cost', rajaongkirController.calculateDomesticCost);
+
 module.exports = router;

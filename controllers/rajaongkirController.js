@@ -1,4 +1,5 @@
-const RajaOngkir = require('../services/rajaongkir');
+const RajaOngkir = require('../models/rajaongkir');
+const knex = require('../db/knex');
 
 // Initialize RajaOngkir instances based on environment variables
 const API_KEY_STARTER = process.env.RAJAONGKIR_STARTER_KEY;
@@ -92,6 +93,23 @@ function handleResponse(res, apiCall, errorMessage = 'Failed to fetch data from 
       });
     });
 }
+
+async function getNominatimPostalCode(kelurahanName, city, country = 'Indonesia'){
+  try {
+    const query = `${kelurahanName}, ${city}, ${country}`;
+    const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1`
+    );
+    const data = await response.json();
+    if (data.length > 0) {
+      return data[0].address?.postcode || null;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching from Nominatim:', error);
+    return null;
+  }
+};
 
 module.exports = {
   /**
@@ -721,5 +739,726 @@ module.exports = {
     }
     const params = req.body;
     return handleResponse(res, proAPI.getFirstWaybill(params), 'Failed to track First waybill');
+  },
+  
+  /**
+  * @swagger
+  * /api/rajaongkir/area/provinsi:
+  *   get:
+  *     summary: Get all provinces from local database
+  *     tags: [RajaOngkir]
+  *     responses:
+  *       200:
+  *         description: Provinces retrieved successfully
+  *         content:
+  *           application/json:
+  *             schema:
+  *               type: object
+  *               properties:
+  *                 status:
+  *                   type: integer
+  *                 message:
+  *                   type: string
+  *                 data:
+  *                   type: array
+  *                   items:
+  *                     $ref: '#/components/schemas/Province'
+  *       404:
+  *         description: No provinces found
+  *         content:
+  *           application/json:
+  *             schema:
+  *               type: object
+  *               properties:
+  *                 status:
+  *                   type: integer
+  *                 message:
+  *                   type: string
+  *                 data:
+  *                   type: null
+  *       500:
+  *         description: Internal server error
+  *         content:
+  *           application/json:
+  *             schema:
+  *               type: object
+  *               properties:
+  *                 status:
+  *                   type: integer
+  *                 message:
+  *                   type: string
+  *                 data:
+  *                   type: null
+  */
+  getProvinceLocal: async (req, res) => {
+      try {
+          const provinsiList = await knex('provinsi')
+              .select('id', 'name')
+              .orderBy('id');
+          
+          if (provinsiList.length === 0) {
+              return res.status(404).json({
+                  status: 404,
+                  message: 'Data provinsi tidak ditemukan',
+                  data: null
+              });
+          }
+
+          return res.status(200).json({
+              status: 200,
+              message: 'Data provinsi berhasil didapatkan',
+              data: provinsiList
+          });
+
+      } catch (err) {
+          console.log(`getProvinceLocal-500: ${err}`);
+          return res.status(500).json({
+              status: 500,
+              message: 'Terjadi kesalahan saat mendapatkan data provinsi',
+              data: null
+          });
+      }
+  },
+
+  /**
+   * @swagger
+   * /api/rajaongkir/area/kabupaten/{id_provinsi}:
+   *   get:
+   *     summary: Get all kabupaten by province ID from local database
+   *     tags: [RajaOngkir]
+   *     parameters:
+   *       - in: path
+   *         name: id_provinsi
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Province ID
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Kabupaten retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Kabupaten'
+   *       400:
+   *         description: Bad request - missing or invalid id_provinsi
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       404:
+   *         description: No kabupaten found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   */
+  getKabupatenLocal: async (req, res) => {
+      try {
+          const { id_provinsi } = req.query;
+          
+          // Validate required parameter
+          if (!id_provinsi) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_provinsi wajib diisi',
+                  data: null
+              });
+          }
+
+          // Validate id_provinsi is a number
+          if (isNaN(id_provinsi)) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_provinsi harus berupa angka',
+                  data: null
+              });
+          }
+
+          const kabupatenList = await knex('kabupaten')
+              .select('id', 'name', 'id_provinsi')
+              .where('id_provinsi', id_provinsi)
+              .orderBy('id');
+          
+          if (kabupatenList.length === 0) {
+              return res.status(404).json({
+                  status: 404,
+                  message: 'Data kabupaten tidak ditemukan untuk provinsi tersebut',
+                  data: null
+              });
+          }
+
+          return res.status(200).json({
+              status: 200,
+              message: 'Data kabupaten berhasil didapatkan',
+              data: kabupatenList
+          });
+
+      } catch (err) {
+          console.log(`getKabupatenLocal-500: ${err}`);
+          return res.status(500).json({
+              status: 500,
+              message: 'Terjadi kesalahan saat mendapatkan data kabupaten',
+              });
+      }
+  },
+
+  /**
+   * @swagger
+   * /api/rajaongkir/area/kecamatan/{id_kabupaten}:
+   *   get:
+   *     summary: Get all kecamatan by kabupaten ID from local database
+   *     tags: [RajaOngkir]
+   *     parameters:
+   *       - in: path
+   *         name: id_kabupaten
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Kabupaten ID
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Kecamatan retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Kecamatan'
+   *       400:
+   *         description: Bad request - missing or invalid id_provinsi
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       404:
+   *         description: No kecamatan found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   */
+  getKecamatanLocal: async (req, res) => {
+      try {
+          const { id_kabupaten } = req.query;
+          
+          // Validate required parameter
+          if (!id_kabupaten) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_kabupaten wajib diisi',
+                  });
+          }
+
+          // Validate id_kabupaten is a number
+          if (isNaN(id_kabupaten)) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_kabupaten harus berupa angka',
+                  data: null
+              });
+          }
+
+          const kecamatanList = await knex('kecamatan')
+              .select('id', 'name', 'id_kabupaten')
+              .where('id_kabupaten', id_kabupaten)
+              .orderBy('id');
+          
+          if (kecamatanList.length === 0) {
+              return res.status(404).json({
+                  status: 404,
+                  message: 'Data kecamatan tidak ditemukan untuk kabupaten tersebut',
+                  data: null
+              });
+          }
+
+          return res.status(200).json({
+              status: 200,
+              message: 'Data kecamatan berhasil didapatkan',
+              data: kecamatanList
+          });
+
+      } catch (err) {
+          console.log(`getKecamatanLocal-500: ${err}`);
+          return res.status(500).json({
+              status: 500,
+              message: 'Terjadi kesalahan saat mendapatkan data kecamatan',
+              data: null
+          });
+      }
+  },
+
+  /**
+   * @swagger
+   * /api/rajaongkir/area/kelurahan/{id_kecamatan}:
+   *   get:
+   *     summary: Get all kelurahan by kelurahan ID from local database
+   *     tags: [RajaOngkir]
+   *     parameters:
+   *       - in: path
+   *         name: id_kecamatan
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Kelurahan ID
+   *         example: 1
+   *     responses:
+   *       200:
+   *         description: Kelurahan retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     $ref: '#/components/schemas/Kelurahan'
+   *       400:
+   *         description: Bad request - missing or invalid id_provinsi
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       404:
+   *         description: No kelurahan found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   *                 data:
+   *                   type: null
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                 message:
+   *                   type: string
+   */
+  getKelurahanLocal: async (req, res) => {
+      try {
+          const { id_kecamatan } = req.query;
+          
+          // Validate required parameter
+          if (!id_kecamatan) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_kecamatan wajib diisi',
+                  data: null
+              });
+          }
+
+          // Validate id_kecamatan is a number
+          if (isNaN(id_kecamatan)) {
+              return res.status(400).json({
+                  status: 400,
+                  message: 'Parameter id_kecamatan harus berupa angka',
+                  data: null
+              });
+          }
+
+          const kelurahanList = await knex('kelurahan')
+              .select('id', 'name', 'id_kecamatan')
+              .where('id_kecamatan', id_kecamatan)
+              .orderBy('id');
+          
+          if (kelurahanList.length === 0) {
+              return res.status(404).json({
+                  status: 404,
+                  message: 'Data kelurahan tidak ditemukan untuk kecamatan tersebut',
+                  data: null
+              });
+          }
+
+          return res.status(200).json({
+              status: 200,
+              message: 'Data kelurahan berhasil didapatkan',
+              data: kelurahanList
+          });
+
+      } catch (err) {
+          console.log(`getKelurahanLocal-500: ${err}`);
+          return res.status(500).json({
+              status: 500,
+              message: 'Terjadi kesalahan saat mendapatkan data kelurahan',
+              });
+      }
+  },
+
+  getNominatimPostalCode: async (req, res) => {
+    try {
+        const { subdistrict, district, city, state, country = 'Indonesia' } = req.body;
+        
+        // Validate required parameters
+        if (!subdistrict || !district || !city || !state) {
+            return res.status(400).json({
+                status: 400,
+                message: 'Parameter subdistrict, district, city, dan state wajib diisi',
+                data: null
+            });
+        }
+
+        // Validate parameters are strings
+        if (typeof subdistrict !== 'string' || typeof district !== 'string' || typeof city !== 'string' || typeof state !== 'string') {
+            return res.status(400).json({
+                status: 400,
+                message: 'Parameter subdistrict, district, city, dan state harus berupa string',
+                data: null
+            });
+        }
+
+        // Build search query
+        const query = `${subdistrict}, ${city}, ${state}, ${country}`;
+        
+        // Call Nominatim API
+        const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=1`,
+            {
+                headers: {
+                    'User-Agent': 'YourAppName/1.0'  // Nominatim requires User-Agent
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            return res.status(404).json({
+                status: 404,
+                message: 'Kode pos tidak ditemukan untuk lokasi tersebut',
+                });
+        }
+
+        const locationData = data[0];
+        const postalCode = locationData.address?.postcode || null;
+
+        if (!postalCode) {
+            return res.status(404).json({
+                status: 404,
+                message: 'Kode pos tidak tersedia untuk lokasi tersebut',
+                });
+        }
+
+        return res.status(200).json({
+            status: 200,
+            message: 'Kode pos berhasil ditemukan',
+            data: {
+                query: query,
+                postal_code: postalCode,
+                coordinates: {
+                    latitude: locationData.lat,
+                    longitude: locationData.lon
+                },
+                full_address: locationData.address,
+                display_name: locationData.display_name
+            }
+        });
+
+    } catch (err) {
+        console.log(`getNominatimPostalCode-500: ${err}`);
+        return res.status(500).json({
+            status: 500,
+            message: 'Terjadi kesalahan saat mencari kode pos',
+            data: null
+        });
+    }
+  },
+
+  /**
+   * @swagger
+   * /api/rajaongkir/calculate/domestic-cost:
+   *   post:
+   *     summary: Menghitung ongkos kirim domestik berdasarkan nama kota/kabupaten
+   *     tags: [RajaOngkir]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - origin
+   *               - destination
+   *               - weight
+   *             properties:
+   *               origin:
+   *                 type: string
+   *                 example: "Jakarta"
+   *                 description: "Nama kota/kabupaten asal"
+   *               destination:
+   *                 type: string
+   *                 example: "Bandung"
+   *                 description: "Nama kota/kabupaten tujuan"
+   *               weight:
+   *                 type: integer
+   *                 example: 1000
+   *                 description: "Berat paket dalam gram"
+   *     responses:
+   *       200:
+   *         description: Berhasil menghitung ongkos kirim
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                   example: 200
+   *                 message:
+   *                   type: string
+   *                   example: "Success"
+   *                 data:
+   *                   type: object
+   *                   description: "Data ongkos kirim"
+   *       404:
+   *         description: Kota asal atau tujuan tidak ditemukan
+   *       500:
+   *         description: Server error
+   */
+  calculateDomesticCost: async (req, res) => {
+    try {
+      const { subdistrict, district, city, state, postal_code, weight } = req.body;
+
+      const originData = await knex("general_settings")
+      .select('main_toko_provinsi as province_name', 'main_toko_kabupaten as city_name', 'main_toko_kecamatan as district_name', 'main_toko_kelurahan as subdistrict_name', 'main_toko_kodepos as zip_code')
+      .first();
+      
+      // Validate required fields
+      if (!subdistrict || !district || !city || !state || !postal_code || !weight) {
+        return res.status(400).json({
+          status: 400,
+          message: 'subdistrict, district, city, state, postal_code, and weight are required'
+        });
+      }
+
+      const destination = `${subdistrict}, ${district}, ${city}, ${state}, ${postal_code}`;
+
+      let errorMessages = [];
+
+      // Helper function for making API calls
+      const makeApiCall = async (url, options = {}) => {
+        const response = await fetch(url, {
+          headers: {
+            'key': process.env.RAJAONGKIR_KEY,
+            'Content-Type': 'application/json',
+            ...options.headers
+          },
+          ...options
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        return response.json();
+      };
+
+      // Get origin data
+      // let data_origin = null;
+      // try {
+      //   const response_origin = await makeApiCall(
+      //     `https://rajaongkir.komerce.id/api/v1/destination/domestic-destination?search=${encodeURIComponent(origin)}&limit=5&offset=0`
+      //   );
+        
+      //   if (response_origin.data && response_origin.data.length > 0) {
+      //     data_origin = response_origin.data[0];
+      //   } else {
+      //     errorMessages.push('[origin not found]');
+      //   }
+      // } catch (error) {
+      //   console.error('Error fetching origin:', error);
+      //   errorMessages.push('[origin not found]');
+      // }
+
+      // Get destination data
+      let data_destination = null;
+      try {
+        const response_destination = await makeApiCall(
+            `https://rajaongkir.komerce.id/api/v1/destination/domestic-destination?search=${encodeURIComponent(destination)}&limit=5&offset=0`
+        );
+        
+        if (response_destination.data && response_destination.data.length > 0) {
+            
+          // Filter data based on subdistrict and postal_code
+            const matchedDestination = response_destination.data.find((data) => {
+              const subdistrictMatch = data.subdistrict_name?.toLowerCase() === subdistrict?.toLowerCase();
+              const postalCodeMatch = data.zip_code?.toString() === postal_code?.toString();
+              return subdistrictMatch && postalCodeMatch;
+            });
+            
+            if (matchedDestination) {
+              data_destination = matchedDestination;
+            } else {
+                // errorMessages.push('[destination not found - no match for subdistrict and postal code]');
+              data_destination = response_destination.data[0];
+            }
+        } else {
+            errorMessages.push('[destination not found]');
+        }
+      } catch (error) {
+          console.error('Error fetching destination:', error);
+          errorMessages.push('[destination not found]');
+      }
+
+      // If there are errors, return them
+      if (errorMessages.length > 0) {
+        return res.status(404).json({
+          status: 404,
+          message: errorMessages.join(' ')
+        });
+      }
+
+      // Calculate shipping cost
+      try {
+        const costResponse = await fetch('https://rajaongkir.komerce.id/api/v1/calculate/domestic-cost', {
+          method: 'POST',
+          headers: {
+            'key': process.env.RAJAONGKIR_KEY,
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: new URLSearchParams({
+            'origin': process.env.ID_ORIGIN, // 
+            'destination': data_destination.id,
+            'weight': weight.toString(),
+            'courier': 'jne:sicepat:ide:sap:jnt:ninja:tiki:lion:anteraja:pos:ncs:rex:rpx:sentral:star:wahana:dse',
+            'price': 'lowest'
+          })
+        });
+
+        if (!costResponse.ok) {
+          throw new Error(`HTTP error! status: ${costResponse.status}`);
+        }
+
+        const costData = await costResponse.json();
+        
+        return res.status(200).json({
+          status: 200,
+          message: 'Success',
+          data: {
+            origin: {
+              id: parseInt(process.env.ID_ORIGIN),
+              label: `${originData.subdistrict_name}, ${originData.district_name}, ${originData.city_name}, ${originData.province_name}, ${originData.zip_code}`,
+              province_name: originData.province_name,
+              city_name: originData.city_name,
+              district_name: originData.district_name,
+              subdistrict_name: originData.subdistrict_name,
+              zip_code: originData.zip_code
+            },
+            destination: data_destination,
+            weight: weight,
+            shipping_costs: costData
+          }
+        });
+
+      } catch (error) {
+        console.error('Error calculating shipping cost:', error);
+        return res.status(500).json({
+          status: 500,
+          message: 'Failed to calculate shipping cost',
+          error: error.message
+        });
+      }
+
+    } catch (error) {
+      console.error('Error in calculateDomesticCost:', error);
+      return res.status(500).json({
+        status: 500,
+        message: 'Internal server error',
+        error: error.message
+      });
+    }
   }
 };
