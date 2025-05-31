@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const reportController = require('../controllers/reportsController');
+const authMiddleware = require('../middleware/authMiddleware');
 const adminCheck = require('../middleware/adminCheck');
 
 router.use(authMiddleware);
@@ -35,16 +36,16 @@ router.get('/average-delivery-time', reportController.averageDeliveryTime);
 router.get('/delivery-status', reportController.deliveryStatus);
 
 // Operational & Performance
-router.get('/fulfillment-rate', reportController.fulfillmentRate);
-router.get('/refund-requests', reportController.refundRequests);
-router.get('/return-rate', reportController.returnRate);
+// router.get('/fulfillment-rate', reportController.fulfillmentRate);
+// router.get('/refund-requests', reportController.refundRequests);
+// router.get('/return-rate', reportController.returnRate);
 
 // Content Performance
-router.get('/page-views', reportController.pageViews);
-router.get('/product-views', reportController.productViews);
+// router.get('/page-views', reportController.pageViews);
+// router.get('/product-views', reportController.productViews);
 router.get('/top-articles', reportController.topArticles);
 router.get('/blog-views', reportController.blogViews);
-router.get('/blog-comments', reportController.blogComments);
+// router.get('/blog-comments', reportController.blogComments);
 router.get('/engagement-rate', reportController.engagementRate);
 
 module.exports = router;
