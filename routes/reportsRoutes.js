@@ -1,10 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const reportController = require('../controllers/reportsController');
+const adminCheck = require('../middleware/adminCheck');
+
+router.use(authMiddleware);
+router.use(adminCheck);
 
 // Sales & Revenue Reports
 router.get('/total-revenue', reportController.totalRevenue);
 router.get('/total-orders', reportController.totalOrders);
+router.get('/this-month-orders', reportController.thisMonthOrders);
 router.get('/average-order-value', reportController.averageOrderValue);
 router.get('/revenue-per-day', reportController.revenuePerDay);
 
@@ -17,6 +22,8 @@ router.get('/product-sales', reportController.productSales);
 router.get('/low-stock', reportController.lowStockProducts);
 router.get('/out-of-stock', reportController.outOfStockProducts);
 router.get('/top-selling', reportController.topSellingProducts);
+router.get('/popular-products-by-cart', reportController.popularProductsByCart);
+router.get('/popular-products-by-reviews', reportController.popularProductsByReviews);
 
 // Voucher & Coupon Reports
 router.get('/coupon-usage', reportController.couponUsage);

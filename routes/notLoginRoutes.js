@@ -15,6 +15,7 @@ router.post(
   ]),
   littleDimpleController.insertManualWarranty
 );
+router.post('/sessions', littleDimpleController.createSession);
 
 
 module.exports = router;

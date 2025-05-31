@@ -78,18 +78,24 @@ module.exports = {
       };
 
       // Reviews (ambil user info juga)
-      const reviewsRaw = await knex('reviews as r')
-        .join('users as u', 'r.user_id', 'u.id')
-        .select(
-          'u.profile_picture as user_profile_picture',
-          'u.username as user_name',
-          'r.created_at as timestamp',
-          'r.rating as score',
-          'r.review as description'
-        )
-        .whereNull('r.deleted_at')
-        .orderBy('r.created_at', 'desc')
-        .limit(10);
+      const selectedReviews = info?.reviews_selected || [];
+      let reviewsRaw = [];
+
+      if(selectedReviews && selectedReviews.length > 0){
+        reviewsRaw = await knex('reviews as r')
+          .join('users as u', 'r.user_id', 'u.id')
+          .select(
+            'u.profile_picture as user_profile_picture',
+            'u.username as user_name',
+            'r.created_at as timestamp',
+            'r.rating as score',
+            'r.review as description'
+          )
+          .whereIn('r.id', selectedReviews)
+          .whereNull('r.deleted_at')
+          .orderBy('r.created_at', 'desc')
+          .limit(10);
+      }
 
       // Call to action (ambil dari tabel call_to_action)
       const call_to_action = {
@@ -372,5 +378,182 @@ module.exports = {
       return res.status(500).json({ error: error.message });
     }
   },
+
+  /**
+   * @swagger
+   * /api/ld/sessions:
+   *   post:
+   *     summary: Create a new session with location data
+   *     tags: [Sessions]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             required:
+   *               - ip
+   *               - long
+   *               - lat
+   *               - alt
+   *             properties:
+   *               ip:
+   *                 type: string
+   *                 description: IP address
+   *                 example: "192.168.1.100"
+   *               long:
+   *                 type: number
+   *                 description: Longitude
+   *                 example: 106.8456
+   *               lat:
+   *                 type: number
+   *                 description: Latitude
+   *                 example: -6.2088
+   *               alt:
+   *                 type: number
+   *                 description: Altitude
+   *                 example: 100.5
+   *     responses:
+   *       201:
+   *         description: Session created successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                   example: 201
+   *                 message:
+   *                   type: string
+   *                   example: "Session created successfully"
+   *                 data:
+   *                   type: object
+   *                   properties:
+   *                     id:
+   *                       type: integer
+   *                       example: 1
+   *                     ip:
+   *                       type: string
+   *                       example: "192.168.1.100"
+   *                     long:
+   *                       type: number
+   *                       example: 106.8456
+   *                     lat:
+   *                       type: number
+   *                       example: -6.2088
+   *                     alt:
+   *                       type: number
+   *                       example: 100.5
+   *                     created_at:
+   *                       type: string
+   *                       format: date-time
+   *                       example: "2024-01-01T12:00:00Z"
+   *                     user_id:
+   *                       type: integer
+   *                       nullable: true
+   *                       example: null
+   *       400:
+   *         description: Bad request - missing required fields
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                   example: 400
+   *                 message:
+   *                   type: string
+   *                   example: "Missing required fields"
+   *                 error:
+   *                   type: string
+   *                   example: "Missing required fields: ip, long, lat, alt"
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: integer
+   *                   example: 500
+   *                 message:
+   *                   type: string
+   *                   example: "Internal server error"
+   *                 error:
+   *                   type: string
+   *                   example: "Database connection error"
+   */
+  createSession: async (req, res) => {
+      const { ip, long, lat, alt } = req.body;
+      
+      // Validate required fields
+      if (!ip || long === undefined || lat === undefined || alt === undefined) {
+          return res.status(400).json({ 
+              status: 400,
+              message: 'Missing required fields',
+              error: 'Missing required fields: ip, long, lat, alt' 
+          });
+      }
+
+      // Validate data types
+      if (typeof ip !== 'string' || 
+          typeof long !== 'number' || 
+          typeof lat !== 'number' || 
+          typeof alt !== 'number') {
+          return res.status(400).json({ 
+              status: 400,
+              message: 'Invalid data types',
+              error: 'ip must be string, long/lat/alt must be numbers' 
+          });
+      }
+
+      try {
+          // Get user_id if user is authenticated (optional)
+          let user_id = null;
+          if (req.user && req.user.id) {
+              try {
+                  user_id = decryptId(req.user.id);
+              } catch (err) {
+                  // If decryption fails, keep user_id as null
+                  user_id = null;
+              }
+          }
+
+          // Insert session data
+          const [newSession] = await knex('sessions').insert({
+              ip,
+              long,
+              lat,
+              alt,
+              user_id
+          }).returning('*');
+
+          return res.status(201).json({
+              status: 201,
+              message: 'Session created successfully',
+              data: {
+                  id: newSession.id,
+                  ip: newSession.ip,
+                  long: parseFloat(newSession.long),
+                  lat: parseFloat(newSession.lat),
+                  alt: parseFloat(newSession.alt),
+                  created_at: newSession.created_at,
+                  user_id: newSession.user_id
+              }
+          });
+
+      } catch (error) {
+          console.error('createSession error:', error);
+          return res.status(500).json({ 
+              status: 500,
+              message: 'Internal server error',
+              error: error.message 
+          });
+      }
+  },
+
 
 };
