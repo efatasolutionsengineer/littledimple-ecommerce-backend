@@ -26,6 +26,8 @@ const notLoginRoutes = require('./routes/notLoginRoutes');
 const productStoreRoutes = require('./routes/productStoreRoutes');
 const dimpleSquadRoutes = require('./routes/dimpleSquadRoutes');
 const rajaongkirRoutes = require('./routes/rajaongkirRoutes');
+const warrantyRoutes = require('./routes/warrantyRoutes');
+const couponsRoutes = require('./routes/couponsRoutes');
 
 
 const { registerUser } = require('./models/utils');
@@ -125,6 +127,8 @@ app.use('/api/ld', notLoginRoutes);
 app.use('/api/stores', productStoreRoutes);
 app.use('/api/dimple-squad', dimpleSquadRoutes);
 app.use('/api/rajaongkir', rajaongkirRoutes);
+app.use('/api/warranty', warrantyRoutes);
+app.use('/api/coupons', couponsRoutes);
 
 
 // Example usage:
