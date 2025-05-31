@@ -19,6 +19,257 @@
       }
     },
     "schemas": {
+      "Coupon_Tables": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Encrypted coupon ID"
+          },
+          "code": {
+            "type": "string"
+          },
+          "is_auto_generated": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "general",
+              "shipping",
+              "regional"
+            ]
+          },
+          "discount_type": {
+            "type": "string",
+            "enum": [
+              "percentage",
+              "amount"
+            ]
+          },
+          "discount_percentage": {
+            "type": "integer"
+          },
+          "discount_amount": {
+            "type": "number"
+          },
+          "min_purchase": {
+            "type": "number"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "Encrypted user ID"
+          },
+          "usage_limit": {
+            "type": "integer"
+          },
+          "usage_count": {
+            "type": "integer"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date"
+          },
+          "valid_until": {
+            "type": "string",
+            "format": "date"
+          },
+          "status_publish": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "coverage_areas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Coverage_Area"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "id": "encrypted_id_string",
+          "code": "DISCOUNT20",
+          "is_auto_generated": false,
+          "type": "general",
+          "discount_type": "percentage",
+          "discount_percentage": 20,
+          "min_purchase": 100000,
+          "usage_limit": 100,
+          "usage_count": 0,
+          "valid_from": "2024-01-01",
+          "valid_until": "2024-12-31",
+          "status_publish": "active",
+          "status": "active",
+          "description": "Discount 20% for all products",
+          "created_at": "2023-01-01T00:00:00Z",
+          "updated_at": "2023-01-01T00:00:00Z"
+        }
+      },
+      "Coverage_Area": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Encrypted coverage area ID"
+          },
+          "coupon_id": {
+            "type": "string",
+            "description": "Encrypted coupon ID"
+          },
+          "province_id": {
+            "type": "integer"
+          },
+          "city_id": {
+            "type": "integer"
+          },
+          "subdistrict_id": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "id": "encrypted_id_string",
+          "coupon_id": "encrypted_coupon_id",
+          "province_id": 1,
+          "city_id": 2,
+          "subdistrict_id": null,
+          "created_at": "2023-01-01T00:00:00Z"
+        }
+      },
+      "Coupon_Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "properties": {
+              "coupons": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Coupon_Tables"
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "current_page": {
+                    "type": "integer"
+                  },
+                  "per_page": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "total_pages": {
+                    "type": "integer"
+                  },
+                  "has_next": {
+                    "type": "boolean"
+                  },
+                  "has_prev": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DimpleSquad": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "introduction_title": {
+            "type": "string"
+          },
+          "introduction_description": {
+            "type": "string"
+          },
+          "introduction_media_link": {
+            "type": "string"
+          },
+          "benefit_title": {
+            "type": "string"
+          },
+          "benefit_object": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "howtojoin_title": {
+            "type": "string"
+          },
+          "howtojoin_description": {
+            "type": "string"
+          },
+          "howtojoin_button_link": {
+            "type": "string"
+          },
+          "howtojoin_button_title": {
+            "type": "string"
+          },
+          "activities_gallery": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "media_link": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "Product": {
         "type": "object",
         "properties": {
@@ -133,6 +384,194 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Province": {
+        "type": "object",
+        "properties": {
+          "province_id": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          }
+        }
+      },
+      "City": {
+        "type": "object",
+        "properties": {
+          "city_id": {
+            "type": "string"
+          },
+          "province_id": {
+            "type": "string"
+          },
+          "province": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "city_name": {
+            "type": "string"
+          },
+          "postal_code": {
+            "type": "string"
+          }
+        }
+      },
+      "CostRequest": {
+        "type": "object",
+        "required": [
+          "origin",
+          "destination",
+          "weight"
+        ],
+        "properties": {
+          "origin": {
+            "type": "string",
+            "example": "501"
+          },
+          "destination": {
+            "type": "string",
+            "example": "114"
+          },
+          "weight": {
+            "type": "integer",
+            "example": 1700
+          },
+          "courier": {
+            "type": "string",
+            "example": "jne"
+          }
+        }
+      },
+      "WaybillRequest": {
+        "type": "object",
+        "required": [
+          "waybill"
+        ],
+        "properties": {
+          "waybill": {
+            "type": "string",
+            "example": "8389890055"
+          }
+        }
+      },
+      "Warranty_Tables": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Encrypted warranty ID"
+          },
+          "produk_id": {
+            "type": "integer"
+          },
+          "order_id": {
+            "type": "integer"
+          },
+          "kode_warranty": {
+            "type": "string"
+          },
+          "nama": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nomor_hp": {
+            "type": "string"
+          },
+          "alamat": {
+            "type": "string"
+          },
+          "attachments_receipt": {
+            "type": "string"
+          },
+          "attachments_barcode": {
+            "type": "string"
+          },
+          "attachments_product": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "submitted",
+              "under_review",
+              "approved",
+              "rejected",
+              "completed"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "example": {
+          "id": "encrypted_id_string",
+          "produk_id": 1,
+          "order_id": 123,
+          "kode_warranty": "WR-2023-001",
+          "nama": "John Doe",
+          "email": "john@example.com",
+          "nomor_hp": "+628123456789",
+          "alamat": "Jl. Example No. 123",
+          "status": "submitted",
+          "created_at": "2023-01-01T00:00:00Z",
+          "updated_at": "2023-01-01T00:00:00Z"
+        }
+      },
+      "Warranty_Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "example": 200
+          },
+          "message": {
+            "type": "string",
+            "properties": {
+              "warranties": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Warranty_Tables"
+                }
+              },
+              "pagination": {
+                "type": "object",
+                "properties": {
+                  "current_page": {
+                    "type": "integer"
+                  },
+                  "per_page": {
+                    "type": "integer"
+                  },
+                  "total": {
+                    "type": "integer"
+                  },
+                  "total_pages": {
+                    "type": "integer"
+                  },
+                  "has_next": {
+                    "type": "boolean"
+                  },
+                  "has_prev": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -781,7 +1220,7 @@
         }
       }
     },
-    "/api/cart": {
+    "/api/cart/me": {
       "get": {
         "summary": "Get all cart items for the authenticated user",
         "tags": [
@@ -792,9 +1231,199 @@
             "cookieAuth": []
           }
         ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          }
+        ],
         "responses": {
           "200": {
-            "description": "List of cart items"
+            "description": "List of cart items with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Cart items retrieved successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "cart": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Cart"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "total_pages": {
+                              "type": "integer"
+                            },
+                            "has_next": {
+                              "type": "boolean"
+                            },
+                            "has_prev": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/cart": {
+      "get": {
+        "summary": "Get all cart items from all users (Admin only)",
+        "tags": [
+          "Cart"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "user_id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by specific user ID",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of all cart items with pagination",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "properties": {
+                        "cart": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Cart"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "total_pages": {
+                              "type": "integer"
+                            },
+                            "has_next": {
+                              "type": "boolean"
+                            },
+                            "has_prev": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       },
@@ -902,7 +1531,7 @@
     },
     "/api/coupons": {
       "post": {
-        "summary": "Tambahkan kupon baru",
+        "summary": "Create new coupon (Admin only)",
         "tags": [
           "Coupons"
         ],
@@ -919,59 +1548,141 @@
                 "type": "object",
                 "required": [
                   "code",
-                  "discount_percentage"
+                  "type",
+                  "discount_type",
+                  "valid_from",
+                  "valid_until"
                 ],
                 "properties": {
                   "code": {
                     "type": "string",
-                    "example": "DISKON50"
+                    "example": "DISCOUNT20"
+                  },
+                  "is_auto_generated": {
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "general",
+                      "shipping",
+                      "regional"
+                    ],
+                    "example": "general"
+                  },
+                  "discount_type": {
+                    "type": "string",
+                    "enum": [
+                      "percentage",
+                      "amount"
+                    ],
+                    "example": "percentage"
                   },
                   "discount_percentage": {
                     "type": "integer",
-                    "example": 50
+                    "minimum": 1,
+                    "maximum": 100,
+                    "example": 20
+                  },
+                  "discount_amount": {
+                    "type": "number",
+                    "minimum": 0,
+                    "example": 50000
+                  },
+                  "min_purchase": {
+                    "type": "number",
+                    "default": 0,
+                    "example": 100000
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "description": "Encrypted user ID for personal voucher"
+                  },
+                  "usage_limit": {
+                    "type": "integer",
+                    "example": 100
                   },
                   "valid_from": {
                     "type": "string",
-                    "format": "date"
+                    "format": "date",
+                    "example": "2024-01-01"
                   },
                   "valid_until": {
                     "type": "string",
-                    "format": "date"
+                    "format": "date",
+                    "example": "2024-12-31"
+                  },
+                  "status_publish": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ],
+                    "default": "inactive"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "active",
+                      "inactive"
+                    ],
+                    "default": "active"
+                  },
+                  "description": {
+                    "type": "string",
+                    "example": "Discount 20% for all products"
+                  },
+                  "coverage_areas": {
+                    "type": "array",
+                    "description": "Required when type is 'regional'",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "province_id": {
+                          "type": "integer"
+                        },
+                        "city_id": {
+                          "type": "integer"
+                        },
+                        "subdistrict_id": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "example": [
+                      {
+                        "province_id": 1,
+                        "city_id": 2,
+                        "subdistrict_id": null
+                      }
+                    ]
                   }
                 }
               }
             }
           }
+        },
+        "responses": {
+          "201": {
+            "description": "Coupon created successfully"
+          },
+          "400": {
+            "description": "Bad request - validation errors"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
         }
       },
       "get": {
-        "summary": "Ambil semua kupon yang masih aktif (belum soft delete)",
-        "tags": [
-          "Coupons"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/coupons-publish": {
-      "get": {
-        "summary": "Ambil semua kupon yang masih aktif, untuk ditampilkan ke user (belum soft delete)",
-        "tags": [
-          "Coupons"
-        ],
-        "security": [
-          {
-            "cookieAuth": []
-          }
-        ]
-      }
-    },
-    "/api/coupons/{code}": {
-      "get": {
-        "summary": "Ambil detail kupon berdasarkan kode",
+        "summary": "Get all coupons with pagination, filtering, sorting, and search (Admin only)",
         "tags": [
           "Coupons"
         ],
@@ -982,33 +1693,170 @@
         ],
         "parameters": [
           {
-            "in": "path",
-            "name": "code",
-            "required": true,
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "sort_order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "Sort order for created_at",
+            "example": "desc"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "inactive"
+              ]
+            },
+            "description": "Filter by status",
+            "example": "active"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at from date (YYYY-MM-DD)",
+            "example": "2023-01-01"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at to date (YYYY-MM-DD)",
+            "example": "2023-12-31"
+          },
+          {
+            "in": "query",
+            "name": "search",
             "schema": {
               "type": "string"
             },
-            "description": "Kode kupon"
+            "description": "Search across all fields",
+            "example": "DISCOUNT"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupons retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coupon_Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access require"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
       }
     },
     "/api/coupons/{id}": {
-      "put": {
-        "summary": "Update an existing coupon",
-        "description": "Update the details of an existing coupon, including code, discount percentage, validity, usage limits, and status.",
+      "get": {
+        "summary": "Get coupon by ID (Admin only)",
         "tags": [
           "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
         ],
         "parameters": [
           {
             "in": "path",
             "name": "id",
             "required": true,
-            "description": "The coupon ID",
             "schema": {
-              "type": "integer"
-            }
+              "type": "string"
+            },
+            "description": "Encrypted coupon ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon retrieved successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Coupon not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update coupon (Admin only)",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted coupon ID"
           }
         ],
         "requestBody": {
@@ -1019,46 +1867,83 @@
                 "type": "object",
                 "properties": {
                   "code": {
+                    "type": "string"
+                  },
+                  "type": {
                     "type": "string",
-                    "description": "The unique code for the coupon"
+                    "enum": [
+                      "general",
+                      "shipping",
+                      "regional"
+                    ]
+                  },
+                  "discount_type": {
+                    "type": "string",
+                    "enum": [
+                      "percentage",
+                      "amount"
+                    ]
                   },
                   "discount_percentage": {
                     "type": "integer",
-                    "description": "Discount percentage (1-100)"
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "discount_amount": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "min_purchase": {
+                    "type": "number"
+                  },
+                  "user_id": {
+                    "type": "string",
+                    "description": "Encrypted user ID"
+                  },
+                  "usage_limit": {
+                    "type": "integer"
                   },
                   "valid_from": {
                     "type": "string",
-                    "format": "date",
-                    "description": "The start date for coupon validity"
+                    "format": "date"
                   },
                   "valid_until": {
                     "type": "string",
-                    "format": "date",
-                    "description": "The end date for coupon validity"
-                  },
-                  "usage_limit": {
-                    "type": "integer",
-                    "description": "The maximum number of uses for this coupon"
-                  },
-                  "usage_count": {
-                    "type": "integer",
-                    "description": "The current number of times the coupon has been used"
+                    "format": "date"
                   },
                   "status_publish": {
                     "type": "string",
                     "enum": [
                       "active",
                       "inactive"
-                    ],
-                    "description": "Status indicating whether the coupon is available for use"
+                    ]
                   },
                   "status": {
                     "type": "string",
                     "enum": [
                       "active",
                       "inactive"
-                    ],
-                    "description": "The internal status of the coupon (active or inactive)"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "coverage_areas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "province_id": {
+                          "type": "integer"
+                        },
+                        "city_id": {
+                          "type": "integer"
+                        },
+                        "subdistrict_id": {
+                          "type": "integer"
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -1067,73 +1952,27 @@
         },
         "responses": {
           "200": {
-            "description": "Coupon updated successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Coupon updated successfully"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Coupon updated successfully"
           },
           "400": {
-            "description": "Invalid input or validation error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Invalid discount percentage"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Bad request - validation errors"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
           },
           "404": {
-            "description": "Coupon not found",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Coupon not found"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Coupon not found"
           },
           "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Internal server error"
-                    }
-                  }
-                }
-              }
-            }
+            "description": "Internal server error"
           }
         }
       },
       "delete": {
-        "summary": "Hapus kupon (soft delete)",
+        "summary": "Delete coupon (soft delete) (Admin only)",
         "tags": [
           "Coupons"
         ],
@@ -1148,66 +1987,195 @@
             "name": "id",
             "required": true,
             "schema": {
-              "type": "integer"
+              "type": "string"
             },
-            "description": "ID kupon"
+            "description": "Encrypted coupon ID"
           }
-        ]
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Coupon not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
       }
     },
-    "/api/validate-coupon": {
+    "/api/coupons/code/{code}": {
       "get": {
-        "summary": "Validasi kupon",
+        "summary": "Get coupon by code (Public access)",
+        "tags": [
+          "Coupons"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Coupon code",
+            "example": "DISCOUNT20"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coupon retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Coupon retrieved successfully"
+                    },
+                    "data": {
+                      "$ref": "#/components/schemas/Coupon_Tables"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Coupon not found or not active"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/coupons/publish": {
+      "get": {
+        "summary": "Get all published and active coupons (Public access)",
         "tags": [
           "Coupons"
         ],
         "parameters": [
           {
             "in": "query",
-            "name": "code",
-            "required": true,
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "general",
+                "shipping",
+                "regional"
+              ]
+            },
+            "description": "Filter by coupon type",
+            "example": "general"
+          },
+          {
+            "in": "query",
+            "name": "discount_type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "percentage",
+                "amount"
+              ]
+            },
+            "description": "Filter by discount type",
+            "example": "percentage"
+          },
+          {
+            "in": "query",
+            "name": "search",
             "schema": {
               "type": "string"
             },
-            "description": "Kode kupon yang ingin divalidasi"
+            "description": "Search in code and description",
+            "example": "DISCOUNT"
           }
         ],
         "responses": {
           "200": {
-            "description": "Kupon valid",
+            "description": "Published coupons retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": true
+                    "status": {
+                      "type": "integer",
+                      "example": 200
                     },
-                    "coupon": {
+                    "message": {
+                      "type": "string",
+                      "example": "Published coupons retrieved successfully"
+                    },
+                    "data": {
                       "type": "object",
                       "properties": {
-                        "id": {
-                          "type": "integer",
-                          "example": 1
+                        "coupons": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/Coupon_Tables"
+                          }
                         },
-                        "code": {
-                          "type": "string",
-                          "example": "DISKON50"
-                        },
-                        "discount_percentage": {
-                          "type": "integer",
-                          "example": 50
-                        },
-                        "valid_from": {
-                          "type": "string",
-                          "format": "date",
-                          "example": "2025-04-01"
-                        },
-                        "valid_until": {
-                          "type": "string",
-                          "format": "date",
-                          "example": "2025-04-30"
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "total_pages": {
+                              "type": "integer"
+                            },
+                            "has_next": {
+                              "type": "boolean"
+                            },
+                            "has_prev": {
+                              "type": "boolean"
+                            }
+                          }
                         }
                       }
                     }
@@ -1217,36 +2185,291 @@
             }
           },
           "400": {
-            "description": "Parameter code tidak diberikan",
+            "description": "Bad request - invalid parameters"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/coupons/me": {
+      "get": {
+        "summary": "Get user's personal coupons and general coupons",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "general",
+                "shipping",
+                "regional"
+              ]
+            },
+            "description": "Filter by coupon type",
+            "example": "general"
+          },
+          {
+            "in": "query",
+            "name": "discount_type",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "percentage",
+                "amount"
+              ]
+            },
+            "description": "Filter by discount type",
+            "example": "percentage"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search in code and description",
+            "example": "DISCOUNT"
+          },
+          {
+            "in": "query",
+            "name": "show_expired",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include expired coupons",
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User coupons retrieved successfully",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "error": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
                       "type": "string",
-                      "example": "Kode kupon diperlukan"
+                      "example": "User coupons retrieved successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "coupons": {
+                          "type": "array",
+                          "items": {
+                            "allOf": [
+                              {
+                                "$ref": "#/components/schemas/Coupon_Tables"
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "is_personal": {
+                                    "type": "boolean",
+                                    "description": "Whether this is a personal coupon for the user"
+                                  },
+                                  "is_expired": {
+                                    "type": "boolean",
+                                    "description": "Whether the coupon is expired"
+                                  },
+                                  "is_used_up": {
+                                    "type": "boolean",
+                                    "description": "Whether the coupon has reached usage limit"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "total_pages": {
+                              "type": "integer"
+                            },
+                            "has_next": {
+                              "type": "boolean"
+                            },
+                            "has_prev": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "total_coupons": {
+                              "type": "integer"
+                            },
+                            "personal_coupons": {
+                              "type": "integer"
+                            },
+                            "general_coupons": {
+                              "type": "integer"
+                            },
+                            "active_coupons": {
+                              "type": "integer"
+                            },
+                            "expired_coupons": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
               }
             }
           },
-          "404": {
-            "description": "Kupon tidak ditemukan atau sudah tidak aktif",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Kupon tidak ditemukan atau sudah tidak aktif"
-                    }
-                  }
-                }
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/dimple-squad": {
+      "post": {
+        "summary": "Create a new Dimple Squad entry",
+        "tags": [
+          "Dimple Squad"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DimpleSquad"
               }
             }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created successfully"
+          }
+        }
+      },
+      "get": {
+        "summary": "Get all Dimple Squad entries",
+        "tags": [
+          "Dimple Squad"
+        ],
+        "responses": {
+          "200": {
+            "description": "List of entries"
+          }
+        }
+      }
+    },
+    "/api/dimple-squad/{id}": {
+      "get": {
+        "summary": "Get a Dimple Squad entry by ID",
+        "tags": [
+          "Dimple Squad"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entry found"
+          },
+          "404": {
+            "description": "Entry not found"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update a Dimple Squad entry",
+        "tags": [
+          "Dimple Squad"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DimpleSquad"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Entry updated"
+          },
+          "404": {
+            "description": "Entry not found"
           }
         }
       }
@@ -2575,6 +3798,617 @@
         }
       }
     },
+    "/api/rajaongkir/provinces": {
+      "get": {
+        "summary": "Mendapatkan daftar provinsi",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar provinsi berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Province"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/provinces/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail provinsi berdasarkan ID",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID provinsi"
+          }
+        ]
+      }
+    },
+    "/api/rajaongkir/cities": {
+      "get": {
+        "summary": "Mendapatkan daftar kota/kabupaten",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "province",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID provinsi untuk filter kota"
+          }
+        ]
+      }
+    },
+    "/api/rajaongkir/cities/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail kota berdasarkan ID",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID kota"
+          }
+        ]
+      }
+    },
+    "/api/rajaongkir/subdistricts": {
+      "get": {
+        "summary": "Mendapatkan daftar kecamatan (Pro only)",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "city",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID kota"
+          }
+        ]
+      }
+    },
+    "/api/rajaongkir/cost": {
+      "post": {
+        "summary": "Menghitung ongkos kirim",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CostRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/waybill/jne": {
+      "post": {
+        "summary": "Melacak pengiriman JNE",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WaybillRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/area/provinsi": {
+      "get": {
+        "summary": "Get all provinces from local database",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "responses": {
+          "200": {
+            "description": "Provinces retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Province"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No provinces found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/area/kabupaten/{id_provinsi}": {
+      "get": {
+        "summary": "Get all kabupaten by province ID from local database",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id_provinsi",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Province ID",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kabupaten retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Kabupaten"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid id_provinsi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No kabupaten found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/area/kecamatan/{id_kabupaten}": {
+      "get": {
+        "summary": "Get all kecamatan by kabupaten ID from local database",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id_kabupaten",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Kabupaten ID",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kecamatan retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Kecamatan"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid id_provinsi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No kecamatan found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/area/kelurahan/{id_kecamatan}": {
+      "get": {
+        "summary": "Get all kelurahan by kelurahan ID from local database",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id_kecamatan",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Kelurahan ID",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kelurahan retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Kelurahan"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing or invalid id_provinsi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No kelurahan found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rajaongkir/calculate/domestic-cost": {
+      "post": {
+        "summary": "Menghitung ongkos kirim domestik berdasarkan nama kota/kabupaten",
+        "tags": [
+          "RajaOngkir"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "origin",
+                  "destination",
+                  "weight"
+                ],
+                "properties": {
+                  "origin": {
+                    "type": "string",
+                    "example": "Jakarta",
+                    "description": "Nama kota/kabupaten asal"
+                  },
+                  "destination": {
+                    "type": "string",
+                    "example": "Bandung",
+                    "description": "Nama kota/kabupaten tujuan"
+                  },
+                  "weight": {
+                    "type": "integer",
+                    "example": 1000,
+                    "description": "Berat paket dalam gram"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Berhasil menghitung ongkos kirim",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Success"
+                    },
+                    "data": {
+                      "type": "object",
+                      "description": "Data ongkos kirim"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Kota asal atau tujuan tidak ditemukan"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/api/reports/total-revenue": {
       "get": {
         "summary": "Get total revenue",
@@ -3582,6 +5416,276 @@
         }
       }
     },
+    "/api/users/grabdata_kecamatan": {
+      "post": {
+        "summary": "Grab ~8000 kecamatan data from 514 kabupaten via external API",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "example": "YOUR_API_KEY",
+                    "description": "Optional API key, will use environment variable if not provided"
+                  },
+                  "batch_size": {
+                    "type": "integer",
+                    "example": 25,
+                    "description": "Number of kabupaten to process in each batch (default: 25)"
+                  },
+                  "delay_ms": {
+                    "type": "integer",
+                    "example": 750,
+                    "description": "Delay between API calls in milliseconds (default: 750ms)"
+                  },
+                  "max_retries": {
+                    "type": "integer",
+                    "example": 3,
+                    "description": "Maximum retry attempts for failed API calls (default: 3)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/grabdata_kelurahan": {
+      "post": {
+        "summary": "Grab ~84000 kelurahan data from ~8000 kecamatan via external API",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "api_key": {
+                    "type": "string",
+                    "example": "YOUR_API_KEY",
+                    "description": "Optional API key, will use environment variable if not provided"
+                  },
+                  "batch_size": {
+                    "type": "integer",
+                    "example": 20,
+                    "description": "Number of kecamatan to process in each batch (default: 20)"
+                  },
+                  "delay_ms": {
+                    "type": "integer",
+                    "example": 500,
+                    "description": "Delay between API calls in milliseconds (default: 500ms)"
+                  },
+                  "max_retries": {
+                    "type": "integer",
+                    "example": 3,
+                    "description": "Maximum retry attempts for failed API calls (default: 3)"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "summary": "Get all users with pagination, filtering, sorting, and search (Admin only)",
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "sort_by",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "role",
+                "gender"
+              ]
+            },
+            "description": "Sort by field",
+            "example": "role"
+          },
+          {
+            "in": "query",
+            "name": "sort_order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "asc"
+            },
+            "description": "Sort order",
+            "example": "desc"
+          },
+          {
+            "in": "query",
+            "name": "email",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by email",
+            "example": "john@example.com"
+          },
+          {
+            "in": "query",
+            "name": "phone_no",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by phone number",
+            "example": "+1234567890"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at from date (YYYY-MM-DD)",
+            "example": "2023-01-01"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at to date (YYYY-MM-DD)",
+            "example": "2023-12-31"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search across all fields (username, email, full_name, phone, address)",
+            "example": "john"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "properties": {
+                        "users": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/User"
+                          }
+                        },
+                        "pagination": {
+                          "type": "object",
+                          "properties": {
+                            "current_page": {
+                              "type": "integer"
+                            },
+                            "per_page": {
+                              "type": "integer"
+                            },
+                            "total": {
+                              "type": "integer"
+                            },
+                            "total_pages": {
+                              "type": "integer"
+                            },
+                            "has_next": {
+                              "type": "boolean"
+                            },
+                            "has_prev": {
+                              "type": "boolean"
+                            }
+                          }
+                        },
+                        "filters": {
+                          "type": "object",
+                          "description": "Applied filters"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/vouchers": {
       "post": {
         "summary": "Create a new voucher",
@@ -3916,6 +6020,321 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/warranty": {
+      "get": {
+        "summary": "Get all warranty data with pagination, filtering, sorting, and search (Admin only)",
+        "tags": [
+          "Warranty"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "Page number",
+            "example": 1
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "Number of items per page",
+            "example": 10
+          },
+          {
+            "in": "query",
+            "name": "sort_order",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            },
+            "description": "Sort order for created_at",
+            "example": "desc"
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "submitted",
+                "under_review",
+                "approved",
+                "rejected",
+                "completed"
+              ]
+            },
+            "description": "Filter by status",
+            "example": "submitted"
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at from date (YYYY-MM-DD)",
+            "example": "2023-01-01"
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Filter created_at to date (YYYY-MM-DD)",
+            "example": "2023-12-31"
+          },
+          {
+            "in": "query",
+            "name": "search",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search across all fields",
+            "example": "john"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warranties retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Warranty_Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid parameters"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/warranty/{id}": {
+      "get": {
+        "summary": "Get warranty by ID (Admin only)",
+        "tags": [
+          "Warranty"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted warranty ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warranty retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Warranty retrieved successfully"
+                    }
+                  },
+                  "$ref": "#/components/schemas/Warranty_Tables"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden - Admin access required"
+          },
+          "404": {
+            "description": "Warranty not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete warranty (soft delete)",
+        "tags": [
+          "Warranty"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted warranty ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Warranty deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Warranty deleted successfully"
+                    },
+                    "data": {
+                      "type": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Warranty not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/warranty/{id}/status": {
+      "put": {
+        "summary": "Update warranty status",
+        "tags": [
+          "Warranty"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Encrypted warranty ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "submitted",
+                      "under_review",
+                      "approved",
+                      "rejected",
+                      "completed"
+                    ],
+                    "example": "under_review"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Warranty status updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Warranty status updated successfully"
+                    },
+                    "$ref": "#/components/schemas/Warranty_Tables"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid status"
+          },
+          "404": {
+            "description": "Warranty not found"
+          },
+          "500": {
+            "description": "Internal server error"
           }
         }
       }
