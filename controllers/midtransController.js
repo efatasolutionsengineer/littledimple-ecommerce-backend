@@ -550,7 +550,6 @@ module.exports = {
                     message: 'Notification already processed',
                         transaction_id: order_id,
                         current_status: previousStatus
-                    }
                 });
             }
 
