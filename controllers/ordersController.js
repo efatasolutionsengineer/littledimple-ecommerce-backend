@@ -918,23 +918,330 @@ module.exports = {
         }
     },
 
+    /**
+     * @swagger
+     * /api/orders/me:
+     *   get:
+     *     summary: Get all orders for the authenticated user
+     *     tags: [Orders]
+     *     security:
+     *       - cookieAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *           minimum: 1
+     *           default: 1
+     *         description: Page number for pagination
+     *         example: 1
+     *       - in: query
+     *         name: limit
+     *         schema:
+     *           type: integer
+     *           minimum: 1
+     *           maximum: 100
+     *           default: 10
+     *         description: Number of orders per page
+     *         example: 10
+     *       - in: query
+     *         name: status
+     *         schema:
+     *           type: string
+     *           enum: [pending, processing, shipped, delivered, cancelled]
+     *         description: Filter orders by status
+     *         example: "processing"
+     *       - in: query
+     *         name: payment_status
+     *         schema:
+     *           type: string
+     *           enum: [pending, paid, failed]
+     *         description: Filter orders by payment status
+     *         example: "paid"
+     *     responses:
+     *       200:
+     *         description: User orders retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 200
+     *                 message:
+     *                   type: string
+     *                   example: "Orders retrieved successfully"
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     orders:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           id:
+     *                             type: string
+     *                             description: Encrypted order ID
+     *                             example: "encrypted_order_id"
+     *                           user_id:
+     *                             type: string
+     *                             description: Encrypted user ID
+     *                             example: "encrypted_user_id"
+     *                           status:
+     *                             type: string
+     *                             enum: [pending, processing, shipped, delivered, cancelled]
+     *                             example: "processing"
+     *                           order_date:
+     *                             type: string
+     *                             format: date-time
+     *                             example: "2023-11-15T10:30:00Z"
+     *                           total_price:
+     *                             type: number
+     *                             example: 150000
+     *                           shipping_cost:
+     *                             type: number
+     *                             example: 15000
+     *                           grand_total:
+     *                             type: number
+     *                             example: 165000
+     *                           discount_amount:
+     *                             type: number
+     *                             example: 5000
+     *                           coupon_codes:
+     *                             type: string
+     *                             description: JSON string of applied coupon codes
+     *                             example: '["DISCOUNT5", "FREEONGKIR"]'
+     *                           shipping_name:
+     *                             type: string
+     *                             example: "SiCepat Express"
+     *                           shipping_service:
+     *                             type: string
+     *                             example: "GOKIL"
+     *                           shipping_etd:
+     *                             type: string
+     *                             example: "2-3 day"
+     *                           receiver_name:
+     *                             type: string
+     *                             example: "Budi Santoso"
+     *                           receiver_phone:
+     *                             type: string
+     *                             example: "08123456789"
+     *                           receiver_address:
+     *                             type: string
+     *                             example: "Jl. Merdeka No.123"
+     *                           receiver_city_name:
+     *                             type: string
+     *                             example: "KABUPATEN TANGERANG"
+     *                           receiver_state_name:
+     *                             type: string
+     *                             example: "BANTEN"
+     *                           receiver_zip_code:
+     *                             type: string
+     *                             example: "15831"
+     *                           payment_method:
+     *                             type: string
+     *                             example: "VA"
+     *                           payment_method_channel:
+     *                             type: string
+     *                             example: "BCA"
+     *                           payment_status:
+     *                             type: string
+     *                             enum: [pending, paid, failed]
+     *                             example: "paid"
+     *                           payment_transaction_id:
+     *                             type: string
+     *                             example: "TXN-123456789"
+     *                           tracking_number:
+     *                             type: string
+     *                             example: "SICEPAT123456789"
+     *                           updated_at:
+     *                             type: string
+     *                             format: date-time
+     *                             example: "2023-11-15T10:30:00Z"
+     *                           items:
+     *                             type: array
+     *                             items:
+     *                               type: object
+     *                               properties:
+     *                                 id:
+     *                                   type: integer
+     *                                   example: 1
+     *                                 order_id:
+     *                                   type: integer
+     *                                   example: 123
+     *                                 product_id:
+     *                                   type: string
+     *                                   description: Encrypted product ID
+     *                                   example: "encrypted_product_id"
+     *                                 quantity:
+     *                                   type: integer
+     *                                   example: 2
+     *                                 price:
+     *                                   type: number
+     *                                   example: 75000
+     *                                 subtotal:
+     *                                   type: number
+     *                                   example: 150000
+     *                                 created_at:
+     *                                   type: string
+     *                                   format: date-time
+     *                                   example: "2023-11-15T10:30:00Z"
+     *                                 updated_at:
+     *                                   type: string
+     *                                   format: date-time
+     *                                   example: "2023-11-15T10:30:00Z"
+     *                     pagination:
+     *                       type: object
+     *                       properties:
+     *                         current_page:
+     *                           type: integer
+     *                           example: 1
+     *                         per_page:
+     *                           type: integer
+     *                           example: 10
+     *                         total:
+     *                           type: integer
+     *                           example: 25
+     *                         total_pages:
+     *                           type: integer
+     *                           example: 3
+     *                         has_next:
+     *                           type: boolean
+     *                           example: true
+     *                         has_prev:
+     *                           type: boolean
+     *                           example: false
+     *       401:
+     *         description: Unauthorized - Authentication required
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 401
+     *                 message:
+     *                   type: string
+     *                   example: "Authentication required"
+     *       404:
+     *         description: No orders found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 404
+     *                 message:
+     *                   type: string
+     *                   example: "No orders found"
+     *                 data:
+     *                   type: null
+     *       500:
+     *         description: Internal server error
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 500
+     *                 message:
+     *                   type: string
+     *                   example: "Internal server error"
+     *                 error:
+     *                   type: string
+     *                   example: "Database connection failed"
+     */
     getUserOrders: async (req, res) => {
-        const user_id = req.user.id;
         try {
-            const orders = await knex('orders')
-            .where({ user_id })
-            .whereNull('deleted_at')
-            .select('*');
+            const user_id = decryptId(req.user.id);
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const offset = (page - 1) * limit;
+            const status = req.query.status;
+            const payment_status = req.query.payment_status;
 
-            for (const order of orders) {
-            order.items = await knex('order_details')
-                .where({ order_id: order.id })
+            // Build base query
+            let baseQuery = knex('orders')
+                .where({ user_id })
                 .whereNull('deleted_at');
+
+            // Apply filters
+            if (status) {
+                baseQuery = baseQuery.where('status', status);
+            }
+            if (payment_status) {
+                baseQuery = baseQuery.where('payment_status', payment_status);
             }
 
-            res.json({ orders });
+            // Get total count for pagination
+            const totalCount = await baseQuery.clone().count('id as count').first();
+            const total = parseInt(totalCount.count);
+            const totalPages = Math.ceil(total / limit);
+
+            // Get orders with pagination
+            const orders = await baseQuery
+                .select('*')
+                .orderBy('order_date', 'desc')
+                .limit(limit)
+                .offset(offset);
+
+            if (orders.length === 0) {
+                return res.status(404).json({
+                    status: 404,
+                    message: 'No orders found',
+                    data: null
+                });
+            }
+
+            // Get order items for each order
+            for (const order of orders) {
+                const orderItems = await knex('order_details')
+                    .where({ order_id: order.id })
+                    .whereNull('deleted_at')
+                    .select('*');
+
+                // Encrypt product IDs in order items
+                order.items = orderItems.map(item => ({
+                    ...item,
+                    product_id: encryptId(item.product_id)
+                }));
+
+                // Encrypt order and user IDs
+                order.id = encryptId(order.id);
+                order.user_id = encryptId(order.user_id);
+            }
+
+            const pagination = {
+                current_page: page,
+                per_page: limit,
+                total: total,
+                total_pages: totalPages,
+                has_next: page < totalPages,
+                has_prev: page > 1
+            };
+
+            res.status(200).json({
+                status: 200,
+                message: 'Orders retrieved successfully',
+                data: {
+                    orders,
+                    pagination
+                }
+            });
+
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            console.error('getUserOrders error:', err);
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                error: err.message
+            });
         }
     },
 
@@ -960,6 +1267,490 @@ module.exports = {
             res.json({ orders });
         } catch (err) {
             res.status(500).json({ message: err.message });
+        }
+    },
+
+    /**
+     * @swagger
+     * /api/orders/details/{order_id}:
+     *   get:
+     *     summary: Get order details for a specific order
+     *     tags: [Orders]
+     *     security:
+     *       - cookieAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: order_id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Encrypted order ID
+     *         example: "encrypted_order_id_string"
+     *       - in: query
+     *         name: include_product_info
+     *         schema:
+     *           type: boolean
+     *           default: false
+     *         description: Include product information in response
+     *         example: true
+     *     responses:
+     *       200:
+     *         description: Order details retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 200
+     *                 message:
+     *                   type: string
+     *                   example: "Order details retrieved successfully"
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     order_id:
+     *                       type: string
+     *                       description: Encrypted order ID
+     *                       example: "encrypted_order_id"
+     *                     order_details:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           id:
+     *                             type: integer
+     *                             example: 1
+     *                           order_id:
+     *                             type: string
+     *                             description: Encrypted order ID
+     *                             example: "encrypted_order_id"
+     *                           product_id:
+     *                             type: string
+     *                             description: Encrypted product ID
+     *                             example: "encrypted_product_id"
+     *                           quantity:
+     *                             type: integer
+     *                             example: 2
+     *                           price:
+     *                             type: number
+     *                             format: decimal
+     *                             example: 75000.00
+     *                           subtotal:
+     *                             type: number
+     *                             format: decimal
+     *                             example: 150000.00
+     *                           created_at:
+     *                             type: string
+     *                             format: date-time
+     *                             example: "2023-11-15T10:30:00Z"
+     *                           product_info:
+     *                             type: object
+     *                             description: Only included when include_product_info=true
+     *                             properties:
+     *                               id:
+     *                                 type: string
+     *                                 description: Encrypted product ID
+     *                               name:
+     *                                 type: string
+     *                                 example: "iPhone 14 Pro"
+     *                               description:
+     *                                 type: string
+     *                                 example: "Latest iPhone with advanced features"
+     *                               image_url:
+     *                                 type: string
+     *                                 example: "https://example.com/images/iphone14pro.jpg"
+     *                               category:
+     *                                 type: string
+     *                                 example: "Electronics"
+     *                     summary:
+     *                       type: object
+     *                       properties:
+     *                         total_items:
+     *                           type: integer
+     *                           example: 3
+     *                         total_quantity:
+     *                           type: integer
+     *                           example: 5
+     *                         total_amount:
+     *                           type: number
+     *                           example: 375000.00
+     *       400:
+     *         description: Bad request - Invalid order ID format
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 400
+     *                 message:
+     *                   type: string
+     *                   example: "Invalid order ID format"
+     *                 data:
+     *                   type: null
+     *       401:
+     *         description: Unauthorized - Authentication required
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 401
+     *                 message:
+     *                   type: string
+     *                   example: "Authentication required"
+     *       403:
+     *         description: Forbidden - Order does not belong to user
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 403
+     *                 message:
+     *                   type: string
+     *                   example: "Access denied - Order does not belong to you"
+     *                 data:
+     *                   type: null
+     *       404:
+     *         description: Order not found or no details found
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 404
+     *                 message:
+     *                   type: string
+     *                   example: "Order not found or no details available"
+     *                 data:
+     *                   type: null
+     *       500:
+     *         description: Internal server error
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 500
+     *                 message:
+     *                   type: string
+     *                   example: "Internal server error"
+     *                 error:
+     *                   type: string
+     *                   example: "Database connection failed"
+     */
+    getOrderDetails: async (req, res) => {
+        try {
+            const user_id = decryptId(req.user.id);
+            const { order_id } = req.params;
+            const include_product_info = req.query.include_product_info === 'true';
+
+            // Validate and decrypt order ID
+            let decrypted_order_id;
+            try {
+                decrypted_order_id = decryptId(order_id);
+            } catch (decryptError) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid order ID format',
+                    data: null
+                });
+            }
+
+            // Verify that the order belongs to the authenticated user
+            const order = await knex('orders')
+                .where('id', decrypted_order_id)
+                .where('user_id', user_id)
+                .whereNull('deleted_at')
+                .first();
+
+            if (!order) {
+                return res.status(404).json({
+                    status: 404,
+                    message: 'Order not found or access denied',
+                    data: null
+                });
+            }
+
+            // Get order details
+            let orderDetailsQuery = knex('order_details')
+                .where('order_id', decrypted_order_id)
+                .whereNull('deleted_at')
+                .select('*')
+                .orderBy('id');
+
+            const orderDetails = await orderDetailsQuery;
+
+            if (orderDetails.length === 0) {
+                return res.status(404).json({
+                    status: 404,
+                    message: 'No order details found for this order',
+                    });
+            }
+
+            // Process order details and optionally include product info
+            let processedDetails = [];
+            let totalQuantity = 0;
+            let totalAmount = 0;
+
+            for (const detail of orderDetails) {
+                let processedDetail = {
+                    id: detail.id,
+                    order_id: encryptId(detail.order_id),
+                    product_id: encryptId(detail.product_id),
+                    quantity: detail.quantity,
+                    price: parseFloat(detail.price),
+                    subtotal: parseFloat(detail.subtotal || (detail.price * detail.quantity)),
+                    created_at: detail.created_at
+                };
+
+                // Include product information if requested
+                if (include_product_info) {
+                    try {
+                        const product = await knex('products')
+                            .where('id', detail.product_id)
+                            .whereNull('deleted_at')
+                            .select('id', 'name', 'description', 'image_url', 'category', 'sku')
+                            .first();
+
+                        if (product) {
+                            processedDetail.product_info = {
+                                id: encryptId(product.id),
+                                name: product.name,
+                                description: product.description,
+                                image_url: product.image_url,
+                                category: product.category,
+                                sku: product.sku
+                            };
+                        } else {
+                            processedDetail.product_info = {
+                                id: encryptId(detail.product_id),
+                                name: 'Product not found',
+                                description: null,
+                                image_url: null,
+                                category: null,
+                                sku: null
+                            };
+                        }
+                    } catch (productError) {
+                        console.error('Error fetching product info:', productError);
+                        processedDetail.product_info = null;
+                    }
+                }
+
+                totalQuantity += detail.quantity;
+                totalAmount += parseFloat(detail.subtotal || (detail.price * detail.quantity));
+                
+                processedDetails.push(processedDetail);
+            }
+
+            // Prepare summary
+            const summary = {
+                total_items: processedDetails.length,
+                total_quantity: totalQuantity,
+                total_amount: totalAmount
+            };
+
+            res.status(200).json({
+                status: 200,
+                message: 'Order details retrieved successfully',
+                data: {
+                    order_id: order_id,
+                    order_details: processedDetails,
+                    summary: summary
+                }
+            });
+
+        } catch (err) {
+            console.error('getOrderDetails error:', err);
+            
+            if (err.message && err.message.includes('decrypt')) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid order ID format',
+                    data: null
+                });
+            }
+
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                error: err.message
+            });
+        }
+    },
+
+    /**
+     * @swagger
+     * /api/admin/order-details:
+     *   get:
+     *     summary: Get all order details with pagination (Admin only)
+     *     tags: [Admin, Orders]
+     *     security:
+     *       - cookieAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *           minimum: 1
+     *           default: 1
+     *         description: Page number
+     *         example: 1
+     *       - in: query
+     *         name: limit
+     *         schema:
+     *           type: integer
+     *           minimum: 1
+     *           maximum: 100
+     *           default: 20
+     *         description: Number of items per page
+     *         example: 20
+     *       - in: query
+     *         name: order_id
+     *         schema:
+     *           type: string
+     *         description: Filter by specific encrypted order ID
+     *         example: "encrypted_order_id"
+     *       - in: query
+     *         name: product_id
+     *         schema:
+     *           type: string
+     *         description: Filter by specific encrypted product ID
+     *         example: "encrypted_product_id"
+     *     responses:
+     *       200:
+     *         description: Order details retrieved successfully
+     *       401:
+     *         description: Unauthorized
+     *       403:
+     *         description: Admin access required
+     *       500:
+     *         description: Internal server error
+     */
+    getAllOrderDetails: async (req, res) => {
+        try {
+            // Check admin access
+            const user_id = decryptId(req.user.id);
+            const adminCheck = await knex('admins')
+                .where('user_id', user_id)
+                .whereNull('deleted_at')
+                .first();
+
+            if (!adminCheck) {
+                return res.status(403).json({
+                    status: 403,
+                    message: 'Admin access required',
+                    data: null
+                });
+            }
+
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 20;
+            const offset = (page - 1) * limit;
+            const order_id_filter = req.query.order_id;
+            const product_id_filter = req.query.product_id;
+
+            // Build base query
+            let baseQuery = knex('order_details as od')
+                .leftJoin('orders as o', 'od.order_id', 'o.id')
+                .leftJoin('products as p', 'od.product_id', 'p.id')
+                .leftJoin('users as u', 'o.user_id', 'u.id')
+                .whereNull('od.deleted_at');
+
+            // Apply filters
+            if (order_id_filter) {
+                const decrypted_order_id = decryptId(order_id_filter);
+                baseQuery = baseQuery.where('od.order_id', decrypted_order_id);
+            }
+
+            if (product_id_filter) {
+                const decrypted_product_id = decryptId(product_id_filter);
+                baseQuery = baseQuery.where('od.product_id', decrypted_product_id);
+            }
+
+            // Get total count
+            const totalCount = await baseQuery.clone().count('od.id as count').first();
+            const total = parseInt(totalCount.count);
+            const totalPages = Math.ceil(total / limit);
+
+            // Get order details with related info
+            const orderDetails = await baseQuery
+                .select(
+                    'od.*',
+                    'o.status as order_status',
+                    'o.payment_status',
+                    'o.order_date',
+                    'p.name as product_name',
+                    'p.sku as product_sku',
+                    'u.name as customer_name',
+                    'u.email as customer_email'
+                )
+                .orderBy('od.created_at', 'desc')
+                .limit(limit)
+                .offset(offset);
+
+            // Process and encrypt IDs
+            const processedDetails = orderDetails.map(detail => ({
+                id: detail.id,
+                order_id: encryptId(detail.order_id),
+                product_id: encryptId(detail.product_id),
+                quantity: detail.quantity,
+                price: parseFloat(detail.price),
+                subtotal: parseFloat(detail.subtotal || (detail.price * detail.quantity)),
+                created_at: detail.created_at,
+                order_info: {
+                    status: detail.order_status,
+                    payment_status: detail.payment_status,
+                    order_date: detail.order_date
+                },
+                product_info: {
+                    name: detail.product_name,
+                    sku: detail.product_sku
+                },
+                customer_info: {
+                    name: detail.customer_name,
+                    email: detail.customer_email
+                }
+            }));
+
+            const pagination = {
+                current_page: page,
+                per_page: limit,
+                total: total,
+                total_pages: totalPages,
+                has_next: page < totalPages,
+                has_prev: page > 1
+            };
+
+            res.status(200).json({
+                status: 200,
+                message: 'Order details retrieved successfully',
+                data: {
+                    order_details: processedDetails,
+                    pagination: pagination
+                }
+            });
+
+        } catch (err) {
+            console.error('getAllOrderDetails error:', err);
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                error: err.message
+            });
         }
     },
 
