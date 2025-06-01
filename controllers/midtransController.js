@@ -305,101 +305,357 @@ module.exports = {
      *         application/json:
      *           schema:
      *             type: object
-     *             description: Midtrans notification payload
+     *             properties:
+     *               transaction_time:
+     *                 type: string
+     *                 format: date-time
+     *                 example: "2023-11-15 18:45:13"
+     *               transaction_status:
+     *                 type: string
+     *                 enum: [capture, settlement, pending, deny, cancel, expire, failure]
+     *                 example: "settlement"
+     *               transaction_id:
+     *                 type: string
+     *                 example: "513f1f01-c9da-474c-9fc9-d5c64364b709"
+     *               status_message:
+     *                 type: string
+     *                 example: "midtrans payment notification"
+     *               status_code:
+     *                 type: string
+     *                 example: "200"
+     *               signature_key:
+     *                 type: string
+     *                 example: "225b3489980d496ca7312da836629af28576031a6901ed64c8cc93a1a14877c866121986b20c2a3b8967ac09a820e9d7b035711918a7cae718d73643fc41bb53"
+     *               settlement_time:
+     *                 type: string
+     *                 format: date-time
+     *                 example: "2023-11-15 22:45:13"
+     *               payment_type:
+     *                 type: string
+     *                 example: "gopay"
+     *               order_id:
+     *                 type: string
+     *                 example: "payment_notif_test_G589882883_93bc9bdd-b8cf-4bc2-96fa-a5d73654f6f2"
+     *               merchant_id:
+     *                 type: string
+     *                 example: "G589882883"
+     *               gross_amount:
+     *                 type: string
+     *                 example: "105000.00"
+     *               fraud_status:
+     *                 type: string
+     *                 enum: [accept, challenge, deny]
+     *                 example: "accept"
+     *               currency:
+     *                 type: string
+     *                 example: "IDR"
+     *             required:
+     *               - transaction_time
+     *               - transaction_status
+     *               - transaction_id
+     *               - order_id
+     *               - merchant_id
+     *               - gross_amount
      *     responses:
      *       200:
      *         description: Notification processed successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 200
+     *                 message:
+     *                   type: string
+     *                   example: "Notification processed successfully"
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     transaction_id:
+     *                       type: string
+     *                     order_id:
+     *                       type: integer
+     *                     previous_status:
+     *                       type: string
+     *                     new_status:
+     *                       type: string
+     *                     payment_type:
+     *                       type: string
      *       400:
      *         description: Invalid notification
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 400
+     *                 message:
+     *                   type: string
+     *                   example: "Invalid merchant ID or missing required fields"
+     *                 data:
+     *                   type: null
+     *       404:
+     *         description: Transaction not found
      *       500:
      *         description: Internal server error
      */
     handleNotification: async (req, res) => {
+        const trx = await knex.transaction();
+        
         try {
             const notification = req.body;
-            const orderId = notification.order_id;
-            const transactionStatus = notification.transaction_status;
-            const fraudStatus = notification.fraud_status;
+            const {
+                transaction_time,
+                transaction_status,
+                transaction_id,
+                status_message,
+                status_code,
+                signature_key,
+                settlement_time,
+                payment_type,
+                order_id,
+                merchant_id,
+                gross_amount,
+                fraud_status,
+                currency
+            } = notification;
 
-            console.log('Midtrans Notification:', notification);
+            console.log('Midtrans Notification received:', {
+                transaction_id,
+                order_id,
+                transaction_status,
+                payment_type,
+                merchant_id,
+                gross_amount,
+                timestamp: new Date().toISOString()
+            });
 
-            // Verify that the notification is for our merchant
-            if (notification.custom_field1 !== process.env.MIDTRANS_MERCHANT_ID) {
+            // Validate required fields
+            if (!transaction_id || !order_id || !transaction_status || !merchant_id || !gross_amount) {
+                await trx.rollback();
                 return res.status(400).json({
                     status: 400,
-                    message: 'Invalid merchant ID in notification'
+                    message: 'Missing required fields in notification',
+                    data: {
+                        required_fields: ['transaction_id', 'order_id', 'transaction_status', 'merchant_id', 'gross_amount'],
+                        received: Object.keys(notification)
+                    }
                 });
             }
 
-            // Verify notification authenticity
-            const statusResponse = await coreApi.transaction.notification(notification);
+            // Verify that the notification is for our merchant
+            if (merchant_id !== process.env.MIDTRANS_MERCHANT_ID) {
+                console.error('Invalid merchant ID:', {
+                    received: merchant_id,
+                    expected: process.env.MIDTRANS_MERCHANT_ID
+                });
+                
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid merchant ID in notification',
+                    data: null
+                });
+            }
 
-            const { order_id, transaction_status, gross_amount, payment_type } = statusResponse;
+            // Verify notification authenticity with Midtrans
+            let statusResponse;
+            try {
+                statusResponse = await coreApi.transaction.notification(notification);
+                console.log('Midtrans verification response:', statusResponse);
+            } catch (verificationError) {
+                console.error('Midtrans verification failed:', verificationError);
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Failed to verify notification with Midtrans',
+                    data: { error: verificationError.message }
+                });
+            }
 
-            // Update transaction status in database
+            // Find existing transaction in database
+            const existingTransaction = await trx('midtrans_transactions')
+                .where('transaction_id', transaction_id)
+                .where('merchant_id', merchant_id)
+                .first();
+
+            if (!existingTransaction) {
+                console.error('Transaction not found:', {
+                    transaction_id,
+                    merchant_id
+                });
+                
+                await trx.rollback();
+                return res.status(404).json({
+                    status: 404,
+                    message: 'Transaction not found in database',
+                    data: {
+                        transaction_id,
+                        merchant_id
+                    }
+                });
+            }
+
+            const previousStatus = existingTransaction.status;
+
+            // Prepare update data
             const updateData = {
                 status: transaction_status,
                 payment_type: payment_type,
-                midtrans_response: JSON.stringify(statusResponse),
+                currency: currency,
+                fraud_status: fraud_status,
+                signature_key: signature_key,
+                status_code: status_code,
+                status_message: status_message,
+                transaction_id_midtrans: transaction_id,
+                transaction_status_midtrans: transaction_status,
+                transaction_time_midtrans: transaction_time,
+                midtrans_response: JSON.stringify({
+                    ...statusResponse,
+                    notification_received_at: new Date().toISOString()
+                }),
                 updated_at: knex.fn.now()
             };
 
             // Handle different transaction statuses
-            if (transaction_status === 'capture') {
-                if (fraudStatus === 'challenge') {
-                    updateData.status = 'challenge';
-                } else if (fraudStatus === 'accept') {
+            let finalStatus = transaction_status;
+            let shouldUpdateOrder = false;
+
+            switch (transaction_status) {
+                case 'capture':
+                    if (fraud_status === 'challenge') {
+                        finalStatus = 'challenge';
+                        updateData.status = 'challenge';
+                    } else if (fraud_status === 'accept') {
+                        finalStatus = 'success';
+                        updateData.status = 'success';
+                        updateData.paid_at = settlement_time || knex.fn.now();
+                        shouldUpdateOrder = true;
+                    } else {
+                        finalStatus = 'pending';
+                        updateData.status = 'pending';
+                    }
+                    break;
+
+                case 'settlement':
+                    finalStatus = 'success';
                     updateData.status = 'success';
-                    updateData.paid_at = knex.fn.now();
-                }
-            } else if (transaction_status === 'settlement') {
-                updateData.status = 'success';
-                updateData.paid_at = knex.fn.now();
-            } else if (transaction_status === 'cancel' || 
-                       transaction_status === 'deny' || 
-                       transaction_status === 'expire') {
-                updateData.status = 'failed';
-            } else if (transaction_status === 'pending') {
-                updateData.status = 'pending';
+                    updateData.paid_at = settlement_time || knex.fn.now();
+                    shouldUpdateOrder = true;
+                    break;
+
+                case 'pending':
+                    finalStatus = 'pending';
+                    updateData.status = 'pending';
+                    break;
+
+                case 'deny':
+                case 'cancel':
+                case 'expire':
+                case 'failure':
+                    finalStatus = 'failed';
+                    updateData.status = 'failed';
+                    break;
+
+                default:
+                    console.warn('Unknown transaction status:', transaction_status);
+                    finalStatus = transaction_status;
+                    updateData.status = transaction_status;
             }
 
-            // Update transaction in database (verify merchant_id for security)
-            const updated = await knex('midtrans_transactions')
-                .where('transaction_id', order_id)
-                .where('merchant_id', process.env.MIDTRANS_MERCHANT_ID)
+            // Update transaction in database
+            const updatedRows = await trx('midtrans_transactions')
+                .where('transaction_id', transaction_id)
+                .where('merchant_id', merchant_id)
                 .update(updateData);
 
-            if (updated) {
-                // If payment successful, update order status
-                if (updateData.status === 'success') {
-                    const transaction = await knex('midtrans_transactions')
-                        .where('transaction_id', order_id)
-                        .where('merchant_id', process.env.MIDTRANS_MERCHANT_ID)
+            if (updatedRows === 0) {
+                await trx.rollback();
+                return res.status(404).json({
+                    status: 404,
+                    message: 'Failed to update transaction',
+                    data: null
+                });
+            }
+
+            console.log('Transaction updated:', {
+                transaction_id,
+                previous_status: previousStatus,
+                new_status: finalStatus,
+                should_update_order: shouldUpdateOrder
+            });
+
+            // Update order status if payment is successful
+            if (shouldUpdateOrder) {
+                const orderUpdateResult = await trx('orders')
+                    .where('id', existingTransaction.order_id)
+                    .update({
+                        payment_status: 'paid',
+                        status: 'processing',
+                        updated_at: knex.fn.now()
+                    });
+
+                console.log('Order updated:', {
+                    order_id: existingTransaction.order_id,
+                    updated_rows: orderUpdateResult,
+                    new_payment_status: 'paid',
+                    new_status: 'processing'
+                });
+
+                // Optional: Send success email notification
+                try {
+                    const order = await trx('orders')
+                        .leftJoin('users', 'orders.user_id', 'users.id')
+                        .where('orders.id', existingTransaction.order_id)
+                        .select('orders.*', 'users.email', 'users.name')
                         .first();
 
-                    if (transaction) {
-                        await knex('orders')
-                            .where('payment_transaction_id', transaction.order_id)
-                            .update({
-                                payment_status: 'paid',
-                                status: 'processing',
-                                updated_at: knex.fn.now()
-                            });
+                    if (order && order.email) {
+                        // You can add email notification here
+                        console.log('Order payment confirmed for user:', order.email);
                     }
+                } catch (emailError) {
+                    console.error('Failed to send confirmation email:', emailError);
+                    // Don't fail the transaction for email errors
                 }
             }
 
+            await trx.commit();
+
+            // Return success response
             res.status(200).json({
                 status: 200,
-                message: 'Notification processed successfully'
+                message: 'Notification processed successfully',
+                data: {
+                    transaction_id: transaction_id,
+                    order_id: existingTransaction.order_id,
+                    previous_status: previousStatus,
+                    new_status: finalStatus,
+                    payment_type: payment_type,
+                    gross_amount: parseFloat(gross_amount),
+                    processed_at: new Date().toISOString()
+                }
             });
 
         } catch (err) {
-            console.error('handleNotification error:', err);
+            await trx.rollback();
+            console.error('handleNotification error:', {
+                error: err.message,
+                stack: err.stack,
+                notification: req.body
+            });
+            
             res.status(500).json({
                 status: 500,
-                message: 'Internal server error',
-                error: err.message
+                message: 'Internal server error while processing notification',
+                data: {
+                    error: err.message,
+                    transaction_id: req.body?.transaction_id || null
+                }
             });
         }
     },
