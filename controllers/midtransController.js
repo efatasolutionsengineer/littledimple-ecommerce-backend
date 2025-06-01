@@ -379,7 +379,7 @@ module.exports = {
 
                     if (transaction) {
                         await knex('orders')
-                            .where('id', transaction.order_id)
+                            .where('payment_transaction_id', transaction.order_id)
                             .update({
                                 payment_status: 'paid',
                                 status: 'processing',
