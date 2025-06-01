@@ -1,4 +1,5 @@
 const knex = require('../db/knex');
+const { encryptId, decryptId } = require('../models/encryption.js');
 
 /**
  * @swagger
@@ -170,7 +171,13 @@ module.exports = {
             // Pagination
             query = query.limit(limit).offset(offset);
 
-            const products = await query;
+            const productsData = await query;
+
+            // Encrypt warranty IDs
+            const products = productsData.map(product => ({
+                ...product,
+                id: encryptId(product.id)
+            }));
 
             res.json({ products, page, limit });
         } catch (err) {

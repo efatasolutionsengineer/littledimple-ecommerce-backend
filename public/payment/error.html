@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Failed</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .error-icon {
+            width: 80px;
+            height: 80px;
+            background: #dc3545;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .title {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .error-details {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="error-icon">✗</div>
+        <h1 class="title">Payment Failed</h1>
+        <p class="message">We're sorry, but your payment could not be processed. Please try again or contact our support team.</p>
+        
+        <div class="error-details" id="errorDetails">
+            <strong>Error Details:</strong><br>
+            <span id="errorMessage">Payment was declined or cancelled.</span>
+        </div>
+        
+        <a href="/checkout" class="btn btn-danger">Try Again</a>
+        <a href="/" class="btn">Back to Home</a>
+        <a href="/contact" class="btn">Contact Support</a>
+    </div>
+
+    <script>
+        // Get URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                order_id: urlParams.get('order_id'),
+                status_code: urlParams.get('status_code'),
+                transaction_status: urlParams.get('transaction_status')
+            };
+        }
+
+        // Show error details
+        function showErrorDetails() {
+            const params = getUrlParams();
+            let errorMessage = 'Payment was declined or cancelled.';
+            
+            if (params.transaction_status) {
+                switch(params.transaction_status) {
+                    case 'deny':
+                        errorMessage = 'Payment was denied by the payment provider.';
+                        break;
+                    case 'expire':
+                        errorMessage = 'Payment session has expired.';
+                        break;
+                    case 'cancel':
+                        errorMessage = 'Payment was cancelled.';
+                        break;
+                    case 'failure':
+                        errorMessage = 'Payment failed due to technical issues.';
+                        break;
+                    default:
+                        errorMessage = `Payment failed with status: ${params.transaction_status}`;
+                }
+            }
+            
+            if (params.order_id) {
+                errorMessage += `<br><small>Transaction ID: ${params.order_id}</small>`;
+            }
+            
+            document.getElementById('errorMessage').innerHTML = errorMessage;
+        }
+
+        // Load error details when page loads
+        document.addEventListener('DOMContentLoaded', showErrorDetails);
+    </script>
+</body>
+</html>

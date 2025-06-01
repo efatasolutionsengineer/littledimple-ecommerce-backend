@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Pending</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .pending-icon {
+            width: 80px;
+            height: 80px;
+            background: #ffc107;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .title {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .pending-details {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .auto-refresh {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            color: #1565c0;
+            padding: 1rem;
+            border-radius: 5px;
+            margin-bottom: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #ffc107;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .countdown {
+            font-weight: bold;
+            color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="pending-icon">⏳</div>
+        <h1 class="title">Payment Pending</h1>
+        <p class="message">Your payment is being processed. Please wait while we confirm your transaction.</p>
+        
+        <div class="pending-details" id="pendingDetails">
+            <div style="margin-bottom: 1rem;">
+                <strong>Transaction ID:</strong> <span id="transactionId">Loading...</span>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <strong>Status:</strong> <span id="status">Pending</span>
+            </div>
+            <div>
+                <strong>Instructions:</strong><br>
+                <span id="instructions">Please complete your payment using the method you selected.</span>
+            </div>
+        </div>
+        
+        <div class="auto-refresh">
+            <div class="spinner"></div>
+            Auto-refreshing in <span class="countdown" id="countdown">30</span> seconds...
+            <br><small>We'll automatically check your payment status</small>
+        </div>
+        
+        <button onclick="checkStatus()" class="btn btn-warning">Check Status Now</button>
+        <a href="/" class="btn">Back to Home</a>
+    </div>
+
+    <script>
+        let countdownTimer;
+        let statusCheckTimer;
+
+        // Get URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                order_id: urlParams.get('order_id'),
+                status_code: urlParams.get('status_code'),
+                transaction_status: urlParams.get('transaction_status')
+            };
+        }
+
+        // Check payment status
+        async function checkStatus() {
+            const params = getUrlParams();
+            
+            if (!params.order_id) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/midtrans/status/${params.order_id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 200) {
+                    const data = result.data;
+                    document.getElementById('transactionId').textContent = data.transaction_id;
+                    document.getElementById('status').textContent = data.status;
+                    
+                    // Redirect based on status
+                    if (data.status === 'settlement' || data.status === 'capture') {
+                        window.location.href = `/payment/finish?order_id=${params.order_id}`;
+                    } else if (data.status === 'deny' || data.status === 'expire' || data.status === 'cancel') {
+                        window.location.href = `/payment/error?order_id=${params.order_id}&transaction_status=${data.status}`;
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking status:', error);
+            }
+        }
+
+        // Countdown timer
+        function startCountdown() {
+            let count = 30;
+            countdownTimer = setInterval(() => {
+                count--;
+                document.getElementById('countdown').textContent = count;
+                
+                if (count <= 0) {
+                    clearInterval(countdownTimer);
+                    checkStatus();
+                    startCountdown(); // Restart countdown
+                }
+            }, 1000);
+        }
+
+        // Initialize page
+        function initializePage() {
+            const params = getUrlParams();
+            
+            if (params.order_id) {
+                document.getElementById('transactionId').textContent = params.order_id;
+            }
+            
+            // Set payment instructions based on transaction status
+            if (params.transaction_status === 'pending') {
+                document.getElementById('instructions').innerHTML = 
+                    'Please complete your payment using the method you selected. ' +
+                    'For bank transfer, please transfer to the provided virtual account number. ' +
+                    'For e-wallet, please check your mobile app.';
+            }
+            
+            startCountdown();
+            checkStatus(); // Initial status check
+        }
+
+        // Load page
+        document.addEventListener('DOMContentLoaded', initializePage);
+
+        // Cleanup timers when leaving page
+        window.addEventListener('beforeunload', () => {
+            if (countdownTimer) clearInterval(countdownTimer);
+            if (statusCheckTimer) clearInterval(statusCheckTimer);
+        });
+    </script>
+</body>
+</html>

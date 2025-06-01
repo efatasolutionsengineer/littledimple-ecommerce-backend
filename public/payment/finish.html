@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #28a745;
+            border-radius: 50%;
+            margin: 0 auto 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .title {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        
+        .message {
+            color: #666;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .transaction-details {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            text-align: left;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .detail-value {
+            color: #666;
+        }
+        
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .btn:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .loading {
+            display: none;
+            color: #666;
+            margin-top: 1rem;
+        }
+        
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #007bff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✓</div>
+        <h1 class="title">Payment Successful!</h1>
+        <p class="message">Thank you for your payment. Your transaction has been completed successfully.</p>
+        
+        <div class="transaction-details" id="transactionDetails">
+            <div class="detail-row">
+                <span class="detail-label">Transaction ID:</span>
+                <span class="detail-value" id="transactionId">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Order ID:</span>
+                <span class="detail-value" id="orderId">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Amount:</span>
+                <span class="detail-value" id="amount">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Payment Method:</span>
+                <span class="detail-value" id="paymentMethod">Loading...</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Status:</span>
+                <span class="detail-value" id="status">Success</span>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Loading transaction details...
+        </div>
+        
+        <a href="/" class="btn">Continue Shopping</a>
+        <a href="/orders" class="btn btn-secondary">View Orders</a>
+    </div>
+
+    <script>
+        // Get URL parameters
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                order_id: urlParams.get('order_id'),
+                status_code: urlParams.get('status_code'),
+                transaction_status: urlParams.get('transaction_status')
+            };
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR'
+            }).format(amount);
+        }
+
+        // Load transaction details
+        async function loadTransactionDetails() {
+            const params = getUrlParams();
+            
+            if (!params.order_id) {
+                document.getElementById('transactionId').textContent = 'N/A';
+                document.getElementById('orderId').textContent = 'N/A';
+                document.getElementById('amount').textContent = 'N/A';
+                document.getElementById('paymentMethod').textContent = 'N/A';
+                return;
+            }
+
+            try {
+                document.getElementById('loading').style.display = 'block';
+                
+                const response = await fetch(`/api/midtrans/status/${params.order_id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 200) {
+                    const data = result.data;
+                    document.getElementById('transactionId').textContent = data.transaction_id;
+                    document.getElementById('orderId').textContent = data.order_id;
+                    document.getElementById('amount').textContent = formatCurrency(data.gross_amount);
+                    document.getElementById('paymentMethod').textContent = data.payment_type || 'N/A';
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Error loading transaction details:', error);
+                document.getElementById('transactionId').textContent = params.order_id || 'N/A';
+                document.getElementById('orderId').textContent = 'Error loading details';
+                document.getElementById('amount').textContent = 'N/A';
+                document.getElementById('paymentMethod').textContent = 'N/A';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Load details when page loads
+        document.addEventListener('DOMContentLoaded', loadTransactionDetails);
+    </script>
+</body>
+</html>

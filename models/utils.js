@@ -242,28 +242,39 @@ module.exports = {
         try {
           const today = dayjs().format('YYYY-MM-DD HH:mm:ss');
       
-          const rows = await knex('products')
+          let product = await knex('products')
             .select('id', 'name', 'price', 'discount_percentage', 'discount_expires_at')
             .where('id', productId)
             .whereNull('deleted_at')
             .first(); // LIMIT 1
 
       
-          if (rows.length === 0) {
+          if (!product) {
             return {
               valid: false,
               message: 'Produk tidak ditemukan',
             };
           }
-      
-          const product = rows[0];
+          
+    
+          // Encrypt warranty IDs
+          product = {
+              ...product,
+              discount_percentage: parseInt(product.discount_percentage),
+              price: parseInt(product.price)
+          };
+          
+          // console.log(`product: ${JSON.stringify(product)}`);
           const isDiscountActive =
             product.discount_percentage &&
             product.discount_percentage > 0 &&
             product.discount_expires_at &&
             dayjs(product.discount_expires_at).isAfter(today);
-      
-          return {
+
+          // console.log(`isDiscountActive: ${isDiscountActive ? `true` : `false`}`);
+          // console.log(`parseFloat(product.price): ${parseFloat(product.price)}`);
+          
+          const final_object = {
             valid: true,
             product: {
               id: product.id,
@@ -271,12 +282,15 @@ module.exports = {
               price: product.price,
               discount_percentage: isDiscountActive ? product.discount_percentage : 0,
               discount_expires_at: product.discount_expires_at,
-              is_discount_active: isDiscountActive,
+              is_discount_active: isDiscountActive ? true : false,
               final_price: isDiscountActive
                 ? parseFloat((product.price * (1 - product.discount_percentage / 100)).toFixed(2))
                 : parseFloat(product.price),
             },
           };
+          
+          // console.log(`final_object: ${JSON.stringify(final_object)}`);
+          return final_object;
         } catch (error) {
           console.error('Error checking product discount:', error);
           return {

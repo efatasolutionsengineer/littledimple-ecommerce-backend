@@ -24,7 +24,9 @@ const {
     
     validateCallbackSignature
    } = require('../middleware/paymentMiddleware.js'); 
-const { getTimestamp, generateExpiredDate, formattedPrice, getSubMerchantID, generateInvoiceNumber, isValidCoupon, isValidVoucher, formatRupiah } = require('../models/utils.js');
+const { sendOrderConfirmationEmail } = require('../models/mailer.js');
+const { getTimestamp, generateExpiredDate, formattedPrice, getSubMerchantID, generateInvoiceNumber, isValidCoupon, isValidVoucher, checkProductDiscount, formatRupiah } = require('../models/utils.js');
+const { decryptId, encryptId } = require('../models/encryption.js');
 const { get } = require('./shippingController.js');
 const productsController = require('./productsController.js');
 /**
@@ -34,13 +36,75 @@ const productsController = require('./productsController.js');
  *   description: Order transactions
  */
 
+// Helper function to apply coupon
+const applyCouponToOrder = async ({ code, order_amount, shipping_cost, destination, user_id, dry_run }) => {
+    // This should call your existing applyCoupon function logic
+    // You can extract the logic from your midtrans applyCoupon function
+    const midtransController = require('./midtransController');
+    
+    // Create a mock request object for the applyCoupon function
+    const mockReq = {
+        user: { id: encryptId(user_id) },
+        body: {
+            code,
+            order_amount,
+            shipping_cost,
+            destination,
+            dry_run
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        const mockRes = {
+            status: (code) => ({
+                json: (data) => {
+                    if (code === 200) {
+                        resolve({ success: true, data });
+                    } else {
+                        reject(new Error(data.message || 'Coupon validation failed'));
+                    }
+                }
+            })
+        };
+
+        midtransController.applyCoupon(mockReq, mockRes);
+    });
+};
+
+// Helper function to create Midtrans transaction
+const createMidtransTransaction = async (transactionData, user_id) => {
+    // console.log(`transactionData: ${JSON.stringify(transactionData)}`);
+    const midtransController = require('./midtransController');
+    
+    const mockReq = {
+        user: { id: encryptId(user_id) },
+        body: transactionData
+    };
+
+    return new Promise((resolve, reject) => {
+        const mockRes = {
+            status: (code) => ({
+                json: (data) => {
+                    if (code === 200) {
+                        resolve(data);
+                    } else {
+                        reject(new Error(data.message || 'Payment creation failed'));
+                    }
+                }
+            })
+        };
+
+        midtransController.createTransaction(mockReq, mockRes);
+    });
+};
+
 module.exports = {
 
     /**
      * @swagger
      * /api/orders:
      *   post:
-     *     summary: Create a new order transaction
+     *     summary: Create a new order with Midtrans payment
      *     tags: [Orders]
      *     security:
      *       - cookieAuth: []
@@ -50,306 +114,810 @@ module.exports = {
      *         application/json:
      *           schema:
      *             type: object
+     *             required:
+     *               - total_price
+     *               - payment_method
+     *               - payment_method_channel
+     *               - shipping_name
+     *               - shipping_code
+     *               - shipping_service
+     *               - shipping_cost
+     *               - shipping_etd
+     *               - shipping_weight
+     *               - receiver_name
+     *               - receiver_phone
+     *               - receiver_address
+     *               - receiver_subdistrict_id
+     *               - receiver_subdistrict_name
+     *               - receiver_city_id
+     *               - receiver_city_name
+     *               - receiver_state_id
+     *               - receiver_state_name
+     *               - receiver_zip_code
+     *               - items
      *             properties:
      *               total_price:
      *                 type: number
-     *                 example: 50000.00
-     *               shipping_address:
-     *                 type: string
-     *                 example: "Jl. Merdeka No.123"
+     *                 description: Total price before discount
+     *                 example: 2889000
+     *               coupon_code:
+     *                 type: array
+     *                 description: Optional array of coupon codes
+     *                 items:
+     *                   type: string
+     *                 example: ["DISCOUNT5", "FREEONGKIR"]
      *               payment_method:
      *                 type: string
+     *                 enum: [VA, EWALLET, QRIS, CC]
      *                 example: "VA"
      *               payment_method_channel:
      *                 type: string
      *                 example: "BCA"
+     *               shipping_name:
+     *                 type: string
+     *                 example: "SiCepat Express"
+     *               shipping_code:
+     *                 type: string
+     *                 example: "sicepat"
      *               shipping_service:
      *                 type: string
-     *                 example: "JNE REG"
+     *                 example: "GOKIL"
+     *               shipping_description:
+     *                 type: string
+     *                 example: "Cargo Per Kg (Minimal 10kg)"
      *               shipping_cost:
      *                 type: number
-     *                 example: 9000
+     *                 example: 38500
      *               shipping_etd:
      *                 type: string
-     *                 example: "2-3 hari"
+     *                 example: "2-3 day"
+     *               shipping_weight:
+     *                 type: number
+     *                 example: 10500
      *               receiver_name:
      *                 type: string
      *                 example: "Budi Santoso"
      *               receiver_phone:
      *                 type: string
      *                 example: "08123456789"
+     *               receiver_address:
+     *                 type: string
+     *                 example: "Jl. Merdeka No.123"
      *               receiver_address_detail:
      *                 type: string
      *                 example: "RT 03 / RW 05, dekat warung bu Sari"
      *               receiver_subdistrict_id:
-     *                 type: integer
-     *                 example: 123456
+     *                 type: string
+     *                 example: "3603281001"
      *               receiver_subdistrict_name:
      *                 type: string
-     *                 example: "Cempaka Putih"
+     *                 example: "KELAPA DUA"
+     *               receiver_district_id:
+     *                 type: string
+     *                 example: "360328"
+     *               receiver_district_name:
+     *                 type: string
+     *                 example: "KELAPA DUA"
+     *               receiver_city_id:
+     *                 type: string
+     *                 example: "3603"
+     *               receiver_city_name:
+     *                 type: string
+     *                 example: "KABUPATEN TANGERANG"
+     *               receiver_state_id:
+     *                 type: string
+     *                 example: "36"
+     *               receiver_state_name:
+     *                 type: string
+     *                 example: "BANTEN"
+     *               receiver_zip_code:
+     *                 type: string
+     *                 example: "15831"
      *               items:
      *                 type: array
      *                 items:
      *                   type: object
      *                   properties:
      *                     product_id:
-     *                       type: integer
-     *                       example: 1
+     *                       type: string
+     *                       description: Encrypted product ID
+     *                       example: "8647400b88aca0ce58a52a58b0efc638"
      *                     quantity:
      *                       type: integer
-     *                       example: 2
+     *                       example: 1
      *                     price:
      *                       type: number
-     *                       example: 25000
-   */
+     *                       example: 2160000
+     *     responses:
+     *       201:
+     *         description: Order created successfully with payment details
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 201
+     *                 message:
+     *                   type: string
+     *                   example: "Order created successfully"
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     order:
+     *                       type: object
+     *                       properties:
+     *                         id:
+     *                           type: string
+     *                           description: Encrypted order ID
+     *                         invoice_number:
+     *                           type: string
+     *                         total_price:
+     *                           type: number
+     *                         status:
+     *                           type: string
+     *                     payment:
+     *                       type: object
+     *                       properties:
+     *                         token:
+     *                           type: string
+     *                           description: Midtrans snap token
+     *                         redirect_url:
+     *                           type: string
+     *                           description: Payment page URL
+     *                         transaction_id:
+     *                           type: string
+     *                     coupons_applied:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                         properties:
+     *                           code:
+     *                             type: string
+     *                           discount_amount:
+     *                             type: number
+     *                           type:
+     *                             type: string
+     *       400:
+     *         description: Bad request - validation errors
+     *       404:
+     *         description: Product not found or coupon invalid
+     *       500:
+     *         description: Internal server error
+     */
     createOrder: async (req, res) => {
-        const {
-        total_price,
-
-
-        shipping_address,
-        shipping_service,
-        shipping_cost,
-        shipping_etd,
-        receiver_name,
-        receiver_phone,
-        receiver_address_detail,
-        receiver_subdistrict_id,
-        receiver_subdistrict_name,
-
-        payment_method,
-        payment_method_channel,
-
-        items,
-        } = req.body;
-
-        const user_id = req.user.id;
-        const customer_name = req.user.name;
-
         const trx = await knex.transaction();
+        
         try {
-    
-            let invoice_number = generateInvoiceNumber();
-
-            // 1. Check Coupon Status
-            const validateCoupon = await isValidCoupon(code);
-            if (!validateCoupon.valid) {
-                return res.status(404).json({ error: result.message });
-            }
-
-            // 2. Check Product Discount
-            let temp_total_price = null;
-            let hasExpiredDiscount = null;
-            let arrayExpiredDiscount = [];
-            for(const item of items){
-
-                const getPrice = await checkProductDiscount(item.product_id);
-                if(getPrice.final_price !== item.price){
-                    const singleProduct = await productsController.ProductGetById(item.product_id);
-                    hasExpiredDiscount = true;
-                    arrayExpiredDiscount.push({ product_id: item.product_id, product_name: singleProduct.name});
-                }
-                temp_total_price += getPrice.final_price * item.quantity;
-            }
-
-            if(hasExpiredDiscount){
-                return res.status(404).json({ 
-                    error: "Terdapat produk yang diskon nya sudah tidak berlaku.",
-                    expired_discount_product: arrayExpiredDiscount
-                });
-            }
-
-            total_price = temp_total_price;
-            total_price = total_price - (total_price * validateCoupon.coupon.discount_percentage / 100);
-
-            // 3. Check Voucher Status
-            const validateVoucher = await isValidVoucher(code);
-            if (!validateVoucher.valid) {
-                return res.status(404).json({ error: result.message });
-            }
-
-            if(validateVoucher.voucher.min_purchase < total_price){
-                return res.status(404).json({ error: `Voucher tidak bisa digunakan, minimal pembelian ${formatRupiah(validateVoucher.voucher.min_purchase)}`});
-            }
-                
-            total_price = formattedPrice(total_price - validateVoucher.voucher.discount_amount);
-
-            // 4. Insert ke tabel Orders (sementara status pending)
-            const [order] = await trx('Orders')
-                .insert({
-                user_id,
-                status: 'pending',
-                order_date: knex.fn.now(),
+            const user_id = decryptId(req.user.id);
+            const {
                 total_price,
-                coupon_code,
-                
-                shipping_address,
+                coupon_code = [], // Default to empty array
+                shipping_name,
+                shipping_code,
                 shipping_service,
-                shipping_cost,
+                shipping_description,
+                shipping_cost = 0,
                 shipping_etd,
-
+                shipping_weight,
                 receiver_name,
                 receiver_phone,
+                receiver_address,
                 receiver_address_detail,
                 receiver_subdistrict_id,
                 receiver_subdistrict_name,
-                payment_transaction_id: invoice_number,
-                payment_method,
-                payment_method_channel,
-                payment_status: 'pending',
-                payment_cancel_reason: null,
-                tracking_number: null,
-                deleted_at: null,
+                receiver_district_id,
+                receiver_district_name,
+                receiver_city_id,
+                receiver_city_name,
+                receiver_state_id,
+                receiver_state_name,
+                receiver_zip_code,
+                items
+            } = req.body;
+            // payment_method,
+            // payment_method_channel,
+
+            //  'payment_method', 'payment_method_channel',
+            // Validate required fields
+            const requiredFields = [
+                'total_price',
+                'shipping_name', 'shipping_code', 'shipping_service', 'shipping_cost',
+                'shipping_etd', 'shipping_weight', 'receiver_name', 'receiver_phone',
+                'receiver_address', 'receiver_subdistrict_id', 'receiver_subdistrict_name',
+                'receiver_city_id', 'receiver_city_name', 'receiver_state_id',
+                'receiver_state_name', 'receiver_zip_code', 'items'
+            ];
+
+            const missingFields = requiredFields.filter(field => 
+                req.body[field] === undefined || req.body[field] === null || req.body[field] === ''
+            );
+
+            if (missingFields.length > 0) {
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: `Missing required fields: ${missingFields.join(', ')}`,
+                    data: null
+                });
+            }
+
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Items must be a non-empty array',
+                    data: null
+                });
+            }
+
+            // Get user details
+            const user = await trx('users')
+                .where('id', user_id)
+                .whereNull('deleted_at')
+                .first();
+
+            if (!user) {
+                await trx.rollback();
+                return res.status(404).json({
+                    status: 404,
+                    message: 'User not found',
+                    data: null
+                });
+            }
+
+            // Generate invoice number
+            const invoice_number = generateInvoiceNumber();
+
+            // 1. Validate and calculate product prices
+            let calculatedSubtotal = 0;
+            let validatedItems = [];
+            let hasExpiredDiscount = false;
+            let expiredDiscountProducts = [];
+
+            // calculatedSubtotal += shipping_cost;
+            
+            for (const item of items) {
+                const product_id = decryptId(item.product_id);
+                
+                // Get current product price with discount
+                let currentPrice = await checkProductDiscount(product_id);
+                
+                if (currentPrice && currentPrice.valid && currentPrice.product) {
+                    const finalPrice = currentPrice.product.final_price;
+                    const productName = currentPrice.product.name;
+                    
+                    // Check if price has changed
+                    if (finalPrice !== item.price) {
+                        hasExpiredDiscount = true;
+                        expiredDiscountProducts.push({
+                            product_id: product_id,
+                            product_name: productName,
+                            old_price: item.price,
+                            new_price: finalPrice
+                        });
+                    }
+                    
+                    // Check stock availability
+                    const product = await trx('products').where('id', product_id).first();
+                    if (!product) {
+                        await trx.rollback();
+                        return res.status(404).json({
+                            status: 404,
+                            message: `Product with ID ${item.product_id} not found`,
+                            data: null
+                        });
+                    }
+
+                    if (product.stock < item.quantity) {
+                        await trx.rollback();
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Insufficient stock for ${productName}. Available: ${product.stock}, Requested: ${item.quantity}`,
+                            data: null
+                        });
+                    }
+                    
+                    calculatedSubtotal += finalPrice * item.quantity;
+                    validatedItems.push({
+                        product_id: product_id,
+                        quantity: item.quantity,
+                        price: finalPrice,
+                        name: productName,
+                        subtotal: finalPrice * item.quantity
+                    });
+                } else {
+                    await trx.rollback();
+                    return res.status(404).json({
+                        status: 404,
+                        message: `Invalid product ID: ${item.product_id}`,
+                        data: null
+                    });
+                }
+            }
+
+            // Return error if any discount expired
+            if (hasExpiredDiscount) {
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Some products have expired discounts or price changes',
+                    data: {
+                        expired_discount_products: expiredDiscountProducts
+                    }
+                });
+            }
+
+            // 2. Validate and apply multiple coupons
+            let totalCouponDiscount = 0;
+            let appliedCoupons = [];
+            let finalSubtotal = calculatedSubtotal;
+            let finalShippingCost = shipping_cost;
+
+            if (coupon_code && Array.isArray(coupon_code) && coupon_code.length > 0) {
+                // Check for duplicate coupon codes
+                const uniqueCoupons = [...new Set(coupon_code)];
+                if (uniqueCoupons.length !== coupon_code.length) {
+                    await trx.rollback();
+                    return res.status(400).json({
+                        status: 400,
+                        message: 'Duplicate coupon codes are not allowed',
+                        original_codes: coupon_code,
+                        duplicate_codes: coupon_code.filter((code, index) => coupon_code.indexOf(code) !== index)
+                    });
+                }
+
+                // Prepare destination for regional coupons
+                const destination = {
+                    province_id: parseInt(receiver_state_id),
+                    city_id: parseInt(receiver_city_id),
+                    subdistrict_id: parseInt(receiver_subdistrict_id)
+                };
+
+                // Process each unique coupon
+                for (const code of uniqueCoupons) {
+                    try {
+                        // Get coupon from database
+                        const coupon = await trx('coupons')
+                            .where('code', code)
+                            .where('status', 'active')
+                            .whereNull('deleted_at')
+                            .where('valid_from', '<=', knex.fn.now())
+                            .where('valid_until', '>=', knex.fn.now())
+                            .first();
+
+                        if (!coupon) {
+                            await trx.rollback();
+                            return res.status(404).json({
+                                status: 404,
+                                message: `Coupon '${code}' not found or not available`,
+                                data: null
+                            });
+                        }
+
+                        // Check usage limit
+                        if (coupon.usage_limit && coupon.usage_count >= coupon.usage_limit) {
+                            await trx.rollback();
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Coupon '${code}' has reached its usage limit`,
+                                data: null
+                            });
+                        }
+
+                        // Check if personal coupon belongs to user
+                        if (coupon.user_id && coupon.user_id !== user_id) {
+                            await trx.rollback();
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Coupon '${code}' is not available for your account`,
+                                data: null
+                            });
+                        }
+
+                        // Check minimum purchase requirement (use original calculated subtotal)
+                        if (coupon.min_purchase && calculatedSubtotal < coupon.min_purchase) {
+                            await trx.rollback();
+                            return res.status(400).json({
+                                status: 400,
+                                message: `Coupon '${code}' requires minimum purchase of ${coupon.min_purchase}`,
+                                });
+                        }
+
+                        // Check regional restrictions
+                        if (coupon.type === 'regional') {
+                            const coverageAreas = await trx('coupon_coverage_areas')
+                                .where('coupon_id', coupon.id);
+
+                            const isInCoverage = coverageAreas.some(area => {
+                                if (area.subdistrict_id && destination.subdistrict_id) {
+                                    return area.subdistrict_id === destination.subdistrict_id;
+                                }
+                                if (area.city_id && destination.city_id) {
+                                    return area.city_id === destination.city_id;
+                                }
+                                if (area.province_id && destination.province_id) {
+                                    return area.province_id === destination.province_id;
+                                }
+                                return false;
+                            });
+
+                            if (!isInCoverage) {
+                                await trx.rollback();
+                                return res.status(400).json({
+                                    status: 400,
+                                    message: `Coupon '${code}' is not available for your delivery location`,
+                                    data: null
+                                });
+                            }
+                        }
+
+                        // Calculate discount based on coupon type
+                        let discountAmount = 0;
+                        let applicableAmount = 0;
+                        let discountTarget = '';
+
+                        if (coupon.type === 'shipping') {
+                            // For shipping coupons, apply discount to shipping cost
+                            applicableAmount = finalShippingCost;
+                            discountTarget = 'shipping';
+                        } else {
+                            // For other coupons (general, regional), apply discount to subtotal
+                            applicableAmount = finalSubtotal;
+                            discountTarget = 'subtotal';
+                        }
+
+                        // Calculate discount amount
+                        if (coupon.discount_type === 'percentage') {
+                            discountAmount = Math.round((applicableAmount * coupon.discount_percentage) / 100);
+                        } else {
+                            discountAmount = Math.min(coupon.discount_amount, applicableAmount);
+                        }
+
+                        // Ensure discount doesn't exceed applicable amount
+                        discountAmount = Math.min(discountAmount, applicableAmount);
+
+                        // Apply discount to the appropriate target
+                        if (coupon.type === 'shipping') {
+                            finalShippingCost = Math.max(0, finalShippingCost - discountAmount);
+                            
+                            // Also decrement from calculatedSubtotal for shipping discounts
+                            calculatedSubtotal = Math.max(0, calculatedSubtotal - discountAmount);
+                            finalSubtotal = Math.max(0, finalSubtotal - discountAmount);
+                        } else {
+                            finalSubtotal = Math.max(0, finalSubtotal - discountAmount);
+                        }
+
+                        // Track total discount
+                        totalCouponDiscount += discountAmount;
+
+                        // Store applied coupon details
+                        appliedCoupons.push({
+                            id: coupon.id,
+                            code: coupon.code,
+                            type: coupon.type,
+                            discount_type: coupon.discount_type,
+                            discount_percentage: coupon.discount_percentage,
+                            discount_amount: discountAmount,
+                            applicable_amount: applicableAmount,
+                            discount_target: discountTarget,
+                            description: coupon.description,
+                            min_purchase: coupon.min_purchase,
+                            applied_at: new Date().toISOString()
+                        });
+
+                        console.log(`Applied coupon ${code}:`, {
+                            type: coupon.type,
+                            discount_amount: discountAmount,
+                            discount_target: discountTarget,
+                            remaining_subtotal: finalSubtotal,
+                            remaining_shipping: finalShippingCost
+                        });
+
+                    } catch (couponError) {
+                        await trx.rollback();
+                        return res.status(400).json({
+                            status: 400,
+                            message: `Error processing coupon '${code}': ${couponError.message}`,
+                            });
+                    }
+                }
+
+                // Validate that we haven't over-discounted
+                if (finalSubtotal < 0 || finalShippingCost < 0) {
+                    await trx.rollback();
+                    return res.status(400).json({
+                        status: 400,
+                        message: 'Total discount exceeds applicable amounts',
+                        data: {
+                            original_subtotal: calculatedSubtotal,
+                            final_subtotal: finalSubtotal,
+                            original_shipping: shipping_cost,
+                            final_shipping: finalShippingCost,
+                            total_discount: totalCouponDiscount
+                        }
+                    });
+                }
+
+                console.log('Coupon processing summary:', {
+                    original_subtotal: calculatedSubtotal + totalCouponDiscount, // Add back to show original
+                    final_subtotal: finalSubtotal,
+                    original_shipping: shipping_cost,
+                    final_shipping: finalShippingCost,
+                    total_discount: totalCouponDiscount,
+                    applied_coupons: appliedCoupons.map(c => ({ code: c.code, type: c.type, discount: c.discount_amount }))
+                });
+            }
+
+            // 3. Calculate final total
+            const grandTotal = finalSubtotal + finalShippingCost;
+
+            // 4. Create order record
+            const [order] = await trx('orders')
+                .insert({
+                    user_id: user_id,
+                    status: 'pending',
+                    order_date: knex.fn.now(),
+                    total_price: calculatedSubtotal,
+                    shipping_cost: shipping_cost,
+                    final_shipping_cost: finalShippingCost,
+                    grand_total: grandTotal,
+                    coupon_code: JSON.stringify(coupon_code), // Store as JSON array
+                    discount_amount: totalCouponDiscount,
+                    
+                    // Shipping details
+                    shipping_name,
+                    shipping_code,
+                    shipping_service,
+                    shipping_description,
+                    shipping_etd,
+                    shipping_weight,
+                    
+                    // Receiver details
+                    receiver_name,
+                    receiver_phone,
+                    receiver_address,
+                    receiver_address_detail,
+                    receiver_subdistrict_id,
+                    receiver_subdistrict_name,
+                    receiver_district_id,
+                    receiver_district_name,
+                    receiver_city_id,
+                    receiver_city_name,
+                    receiver_state_id,
+                    receiver_state_name,
+                    receiver_zip_code,
+                    
+                    // Payment details
+                    payment_transaction_id: invoice_number,
+                    // payment_method,
+                    // payment_method_channel,
+                    payment_status: 'pending',
+                    
+                    updated_at: knex.fn.now()
                 })
                 .returning('*');
-            
-            // 5. Insert semua item ke Order_Details
-            for (const item of items) {
-                await trx('Order_Details').insert({
+
+            // 5. Insert order details and update stock
+            for (const item of validatedItems) {
+                await trx('order_details').insert({
                     order_id: order.id,
                     product_id: item.product_id,
                     quantity: item.quantity,
                     price: item.price,
+                    subtotal: item.subtotal,
+                    created_at: knex.fn.now()
+                });
+
+                // Update product stock
+                await trx('products')
+                    .where('id', item.product_id)
+                    .decrement('stock', item.quantity);
+            }
+
+            // 6. Apply coupon usage (increment count) and store applied coupons
+            for (const appliedCoupon of appliedCoupons) {
+                // Increment coupon usage count
+                await trx('coupons')
+                    .where('id', appliedCoupon.id)
+                    .increment('usage_count', 1)
+                    .update('updated_at', knex.fn.now());
+
+                // Store applied coupon details (if you have an order_coupons table)
+                // await trx('order_coupons').insert({
+                //     order_id: order.id,
+                //     coupon_id: appliedCoupon.id,
+                //     coupon_code: appliedCoupon.code,
+                //     discount_amount: appliedCoupon.discount_amount,
+                //     created_at: knex.fn.now()
+                // });
+            }
+
+            // 7. Prepare Midtrans transaction data
+            const customer_details = {
+                first_name: user.name ? user.name.split(' ')[0] : receiver_name.split(' ')[0],
+                last_name: user.name ? user.name.split(' ').slice(1).join(' ') : receiver_name.split(' ').slice(1).join(' '),
+                email: user.email,
+                phone: user.phone || receiver_phone,
+                billing_address: {
+                    first_name: receiver_name.split(' ')[0],
+                    last_name: receiver_name.split(' ').slice(1).join(' '),
+                    email: user.email,
+                    phone: receiver_phone,
+                    address: receiver_address,
+                    city: receiver_city_name,
+                    postal_code: receiver_zip_code,
+                    country_code: "IDN"
+                },
+                shipping_address: {
+                    first_name: receiver_name.split(' ')[0],
+                    last_name: receiver_name.split(' ').slice(1).join(' '),
+                    email: user.email,
+                    phone: receiver_phone,
+                    address: `${receiver_address}${receiver_address_detail ? ', ' + receiver_address_detail : ''}`,
+                    city: receiver_city_name,
+                    postal_code: receiver_zip_code,
+                    country_code: "IDN"
+                }
+            };
+
+            const item_details = [
+                // Product items
+                ...validatedItems.map((item) => ({
+                    id: encryptId(item.product_id),
+                    name: item.name,
+                    price: item.price,
+                    quantity: item.quantity
+                })),
+                
+                // Shipping cost as separate item
+                {
+                    id: "SHIPPING",
+                    name: `${shipping_name} - ${shipping_service}`,
+                    price: shipping_cost,
+                    quantity: 1
+                },
+                
+                // Coupon discounts as negative items
+                ...appliedCoupons.map((coupon, index) => ({
+                    id: `DISCOUNT-${index + 1}`,
+                    name: `Discount - ${coupon.code}`,
+                    price: -coupon.discount_amount,
+                    quantity: 1
+                }))
+            ];
+            // console.log(`item_details: ${JSON.stringify(item_details)}`);
+            const sum_item_details = item_details.reduce((sum, item) => {
+                return sum + item.price;
+            }, 0);
+            // console.log(`sum of item_details: ${sum_item_details}`);
+            // console.log(`gross_amount: ${grandTotal}`);
+            // console.log(`finalSubtotal: ${finalSubtotal}`);
+            // console.log(`finalShippingCost: ${finalShippingCost}`);
+
+            // Validate total price matches calculated subtotal
+            if (Math.abs(sum_item_details - total_price) > 1) {
+                await trx.rollback();
+                return res.status(400).json({
+                    status: 400,
+                    message: `Total price mismatch. Expected: ${sum_item_details}, Received: ${total_price}`,
+                    data: null
                 });
             }
 
-            // 6. Proses pembayaran ke WinPay
-            let paymentResult = null;
-            const contractId = null;
-            const paymentData = null;
+            // 8. Create Midtrans transaction
+            const midtransData = {
+                order_id: encryptId(order.id),
+                gross_amount: sum_item_details,
+                customer_details: customer_details,
+                item_details: item_details
+            };
+            // payment_type: payment_method
 
-            const SingleUser = await knex('users')
-            .where({ id: user_id })
-            .whereNull('deleted_at')
-            .first();
+            // Call Midtrans createTransaction
+            const paymentResult = await createMidtransTransaction(midtransData, user_id);
 
-            switch (payment_method) {
-                case 'VA':
-                    paymentData = {
-                        customerNo: SingleUser.phone, // format harus diawali 08
-                        virtualAccountName: customer_name,
-                        trxId: invoice_number,
-                        totalAmount: {
-                            value: formattedPrice(total_price), // convert to decimal, example 25000.00
-                            currency: "IDR"
-                        },
-                        virtualAccountTrxType: "c",
-                        expiredDate: generateExpiredDate(60 * 24), //tolong buatkan +24 jam dari waktu saat ini 2025-04-12T09:53:14+07:00
-                        additionalInfo: {
-                            channel: payment_method_channel
-                        }
-                    }
-                    paymentResult = await createVirtualAccountPayment(paymentData, getTimestamp(), payment_method_channel);
-                    contractId = paymentResult.additionalInfo.contractId
-                    break;
-                case 'EWALLET':
-                    paymentData = {
-                        partnerReferenceNo: invoice_number,
-                        amount: {
-                            value: formattedPrice(total_price),
-                            currency: "IDR"
-                        },
-                        urlParam: [
-                        {
-                            url: "https://test1.bi.go.id/v1/test",
-                            type: "PAY_NOTIFY",
-                            isDeeplink: "N"
-                        },
-                        {
-                            url: "https://test1.bi.go.id/v1/test",
-                            type: "PAY_RETURN",
-                            isDeeplink: "N"
-                        }
-                        ],
-                        validUpTo: generateExpiredDate(10),
-                        additionalInfo: {
-                            channel: payment_method_channel,
-                            customerPhone: SingleUser.phone,
-                            customerName: customer_name
-                        }
-                    }
-                    paymentResult = await createEWalletPayment(paymentData, getTimestamp(), payment_method_channel);
-                    contractId = paymentResult.additionalInfo.contractId;
-                    break
-                case 'QRIS':
-                    paymentData = {
-                        partnerReferenceNo: "ref00000000001",
-                        terminalId: "TERM GIGIH",
-                        subMerchantId: getSubMerchantID(),
-                        amount: {
-                            value: formattedPrice(total_price),
-                            currency: "IDR"
-                        },
-                        validityPeriod: generateExpiredDate(60 * 1),
-                        additionalInfo: {
-                            isStatic: false
-                        }
-                    }
-                    paymentResult = await createQRISPayment(paymentData, getTimestamp(), 'QRIS');
-                    contractId = paymentResult.additionalInfo.contractId;
-                    break;
-                case 'CC':
-                    paymentResult = await createCreditCardPayment(paymentData, getTimestamp(), 'CC');
-                    break;
-                default:
-                    throw new Error('Metode pembayaran tidak dikenali');
-            }
-
-            // let paymentDetails = {};
-
-            // switch (payment_method) {
-            //     case 'VA':
-            //         paymentDetails.virtualAccountNumber = "1234567890123456"; // Nomor Virtual Account
-            //         break;
-            //     case 'QRIS':
-            //         paymentDetails.qrisImageUrl = "https://link.to/your/qris/image.png"; // URL gambar QRIS
-            //         break;
-            //     case 'EWALLET':
-            //         paymentDetails.paymentLink = "https://link.to/ewallet/payment"; // Link pembayaran e-wallet
-            //         break;
-            //     case 'CC':
-            //         paymentDetails.paymentLink = "https://link.to/credit-card/payment"; // Link pembayaran kartu kredit
-            //         break;
-            //     default:
-            //         paymentDetails = {};
-            //         break;
-            // }
-
-            // Mengirim email setelah pembuatan order
-            await sendBillingEmail(SingleUser.email, invoice_number, total_price, payment_method, paymentDetails);
-
-
-            // 7. Jika sukses, update order dengan status & ID transaksi dari WinPay
-            if (paymentResult && paymentResult.transactionId) {
-                await trx('Orders')
-                .where({ id: order.id })
+            // 9. Update order with Midtrans transaction details
+            await trx('orders')
+                .where('id', order.id)
                 .update({
-                    status: 'paid', // Atau tetap 'pending' jika menunggu callback
-                    payment_status: 'paid',
-                    payment_contract_id: contractId
+                    payment_transaction_id: paymentResult.data.transaction_id,
+                    updated_at: knex.fn.now()
                 });
-            }
 
             await trx.commit();
+
+            // 10. Send confirmation email (optional)
+            try {
+                await sendOrderConfirmationEmail({
+                    email: user.email,
+                    invoice_number: invoice_number,
+                    total_amount: sum_item_details,
+                    payment_url: paymentResult.data.redirect_url,
+                    order_details: validatedItems
+                });
+            } catch (emailError) {
+                console.error('Failed to send confirmation email:', emailError);
+                // Don't fail the order creation if email fails
+            }
+
+            // 11. Return success response
             res.status(201).json({
+                status: 201,
                 message: 'Order created successfully',
-                order,
-                payment: paymentResult,
+                data: {
+                    order: {
+                        id: encryptId(order.id),
+                        invoice_number: invoice_number,
+                        subtotal: calculatedSubtotal,
+                        shipping_cost: shipping_cost,
+                        final_shipping_cost: finalShippingCost,
+                        total_discount: totalCouponDiscount,
+                        grand_total: grandTotal,
+                        status: order.status,
+                        payment_status: order.payment_status,
+                        created_at: order.order_date,
+                        
+                        shipping_details: {
+                            name: shipping_name,
+                            code: shipping_code,
+                            service: shipping_service,
+                            description: shipping_description,
+                            cost: shipping_cost,
+                            final_cost: finalShippingCost,
+                            etd: shipping_etd,
+                            weight: shipping_weight
+                        },
+                        
+                        receiver_details: {
+                            name: receiver_name,
+                            phone: receiver_phone,
+                            address: receiver_address,
+                            address_detail: receiver_address_detail,
+                            subdistrict_id: receiver_subdistrict_id,
+                            subdistrict_name: receiver_subdistrict_name,
+                            district_id: receiver_district_id,
+                            district_name: receiver_district_name,
+                            city_id: receiver_city_id,
+                            city_name: receiver_city_name,
+                            state_id: receiver_state_id,
+                            state_name: receiver_state_name,
+                            zip_code: receiver_zip_code
+                        }
+                    },
+                    
+                    payment: {
+                        token: paymentResult.data.token,
+                        redirect_url: paymentResult.data.redirect_url,
+                        transaction_id: paymentResult.data.transaction_id
+                    },
+                    
+                    coupons_applied: appliedCoupons,
+                    
+                    items: validatedItems.map(item => ({
+                        product_id: encryptId(item.product_id),
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        subtotal: item.subtotal
+                    }))
+                }
             });
+
         } catch (err) {
             await trx.rollback();
-            res.status(500).json({ message: err.message });
+            console.error('createOrder error:', err);
+            
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                
+                error: err.message
+            });
         }
     },
-  
 
-    /**
-     * @swagger
-     * /api/orders/me:
-     *   get:
-     *     summary: Get all orders by authenticated user
-     *     tags: [Orders]
-     */
     getUserOrders: async (req, res) => {
         const user_id = req.user.id;
         try {

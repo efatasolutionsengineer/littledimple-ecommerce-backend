@@ -28,6 +28,7 @@ const dimpleSquadRoutes = require('./routes/dimpleSquadRoutes');
 const rajaongkirRoutes = require('./routes/rajaongkirRoutes');
 const warrantyRoutes = require('./routes/warrantyRoutes');
 const couponsRoutes = require('./routes/couponsRoutes');
+const midtransRoutes = require('./routes/midtransRoutes');
 
 
 const { registerUser } = require('./models/utils');
@@ -39,6 +40,7 @@ const app = express();
 
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const { encryptId } = require('./models/encryption');
 
 const swaggerOptions = {
     swaggerDefinition: {
@@ -129,6 +131,23 @@ app.use('/api/dimple-squad', dimpleSquadRoutes);
 app.use('/api/rajaongkir', rajaongkirRoutes);
 app.use('/api/warranty', warrantyRoutes);
 app.use('/api/coupons', couponsRoutes);
+app.use('/api/midtrans', midtransRoutes);
+
+// Serve static files for payment pages
+// app.use('/payment', express.static('public/payment'));
+
+// Or create specific routes
+app.get('/payment/finish', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/payment/finish.html'));
+});
+
+app.get('/payment/error', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/payment/error.html'));
+});
+
+app.get('/payment/pending', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public/payment/pending.html'));
+});
 
 
 // Example usage:

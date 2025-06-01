@@ -270,6 +270,56 @@
           }
         }
       },
+      "MidtransTransaction": {
+        "type": "object",
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "description": "Encrypted order ID"
+          },
+          "gross_amount": {
+            "type": "number",
+            "description": "Total amount"
+          },
+          "customer_details": {
+            "type": "object",
+            "properties": {
+              "first_name": {
+                "type": "string"
+              },
+              "last_name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              }
+            }
+          },
+          "item_details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "price": {
+                  "type": "number"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      },
       "Product": {
         "type": "object",
         "properties": {
@@ -2380,6 +2430,182 @@
         }
       }
     },
+    "/api/coupons/apply": {
+      "post": {
+        "summary": "Apply/validate coupon code for user order",
+        "tags": [
+          "Coupons"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "code",
+                  "order_amount"
+                ],
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "description": "Coupon code to apply",
+                    "example": "DISCOUNT20"
+                  },
+                  "order_amount": {
+                    "type": "number",
+                    "description": "Total order amount before discount",
+                    "example": 150000
+                  },
+                  "shipping_cost": {
+                    "type": "number",
+                    "description": "Shipping cost (required for shipping type coupons)",
+                    "example": 25000
+                  },
+                  "destination": {
+                    "type": "object",
+                    "description": "Destination details (required for regional coupons)",
+                    "properties": {
+                      "province_id": {
+                        "type": "integer",
+                        "example": 1
+                      },
+                      "city_id": {
+                        "type": "integer",
+                        "example": 2
+                      },
+                      "subdistrict_id": {
+                        "type": "integer",
+                        "example": 3
+                      }
+                    }
+                  },
+                  "dry_run": {
+                    "type": "boolean",
+                    "description": "If true, only validate without incrementing usage count",
+                    "default": true,
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Coupon applied successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Coupon applied successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "coupon": {
+                          "$ref": "#/components/schemas/Coupon_Tables"
+                        },
+                        "discount_calculation": {
+                          "type": "object",
+                          "properties": {
+                            "original_amount": {
+                              "type": "number",
+                              "example": 150000
+                            },
+                            "discount_amount": {
+                              "type": "number",
+                              "example": 30000
+                            },
+                            "final_amount": {
+                              "type": "number",
+                              "example": 120000
+                            },
+                            "discount_percentage": {
+                              "type": "number",
+                              "example": 20
+                            },
+                            "applicable_to": {
+                              "type": "string",
+                              "enum": [
+                                "order",
+                                "shipping"
+                              ],
+                              "example": "order"
+                            },
+                            "original_shipping": {
+                              "type": "number",
+                              "example": 25000
+                            },
+                            "final_shipping": {
+                              "type": "number",
+                              "example": 25000
+                            }
+                          }
+                        },
+                        "validation": {
+                          "type": "object",
+                          "properties": {
+                            "is_valid": {
+                              "type": "boolean",
+                              "example": true
+                            },
+                            "is_personal": {
+                              "type": "boolean",
+                              "example": false
+                            },
+                            "is_regional": {
+                              "type": "boolean",
+                              "example": false
+                            },
+                            "remaining_usage": {
+                              "type": "integer",
+                              "example": 95
+                            },
+                            "expires_at": {
+                              "type": "string",
+                              "format": "date",
+                              "example": "2024-12-31"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation errors"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Coupon not found or not applicable"
+          },
+          "422": {
+            "description": "Coupon validation failed"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/dimple-squad": {
       "post": {
         "summary": "Create a new Dimple Squad entry",
@@ -2775,9 +3001,428 @@
         }
       }
     },
+    "/api/ld/sessions": {
+      "post": {
+        "summary": "Create a new session with location data",
+        "tags": [
+          "Sessions"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ip",
+                  "long",
+                  "lat",
+                  "alt"
+                ],
+                "properties": {
+                  "ip": {
+                    "type": "string",
+                    "description": "IP address",
+                    "example": "192.168.1.100"
+                  },
+                  "long": {
+                    "type": "number",
+                    "description": "Longitude",
+                    "example": 106.8456
+                  },
+                  "lat": {
+                    "type": "number",
+                    "description": "Latitude",
+                    "example": -6.2088
+                  },
+                  "alt": {
+                    "type": "number",
+                    "description": "Altitude",
+                    "example": 100.5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 201
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Session created successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "ip": {
+                          "type": "string",
+                          "example": "192.168.1.100"
+                        },
+                        "long": {
+                          "type": "number",
+                          "example": 106.8456
+                        },
+                        "lat": {
+                          "type": "number",
+                          "example": -6.2088
+                        },
+                        "alt": {
+                          "type": "number",
+                          "example": 100.5
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2024-01-01T12:00:00Z"
+                        },
+                        "user_id": {
+                          "type": "integer",
+                          "nullable": true,
+                          "example": null
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing required fields",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 400
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Missing required fields"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Missing required fields: ip, long, lat, alt"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 500
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Internal server error"
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Database connection error"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/midtrans/create-transaction": {
+      "post": {
+        "summary": "Create Midtrans payment transaction",
+        "tags": [
+          "Midtrans"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "order_id",
+                  "gross_amount",
+                  "customer_details",
+                  "item_details"
+                ],
+                "properties": {
+                  "order_id": {
+                    "type": "string",
+                    "description": "Encrypted order ID",
+                    "example": "08f9efede18cf28268e06bd86eedf249"
+                  },
+                  "gross_amount": {
+                    "type": "number",
+                    "description": "Total amount",
+                    "example": 2400000
+                  },
+                  "customer_details": {
+                    "type": "object",
+                    "properties": {
+                      "first_name": {
+                        "type": "string",
+                        "example": "Rano"
+                      },
+                      "last_name": {
+                        "type": "string",
+                        "example": "Muhamad"
+                      },
+                      "email": {
+                        "type": "string",
+                        "example": "ranomuhamad98@gmail.com"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "example": "+6285716800875"
+                      },
+                      "billing_address": {
+                        "type": "object",
+                        "properties": {
+                          "address": {
+                            "type": "string",
+                            "example": "Jl. Palapa Blok F12"
+                          },
+                          "city": {
+                            "type": "string",
+                            "example": "KOTA TANGERANG SELATAN"
+                          },
+                          "postal_code": {
+                            "type": "string",
+                            "example": "15414"
+                          },
+                          "country_code": {
+                            "type": "string",
+                            "default": "IDN"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "item_details": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "example": "8647400b88aca0ce58a52a58b0efc638"
+                        },
+                        "name": {
+                          "type": "string",
+                          "example": "Baby Stroller"
+                        },
+                        "price": {
+                          "type": "number",
+                          "example": 2400000
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "example": 1
+                        }
+                      }
+                    }
+                  },
+                  "payment_type": {
+                    "type": "string",
+                    "enum": [
+                      "credit_card",
+                      "bank_transfer",
+                      "gopay",
+                      "shopeepay"
+                    ],
+                    "description": "Preferred payment method",
+                    "example": "bank_transfer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transaction created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 200
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Transaction created successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "token": {
+                          "type": "string",
+                          "description": "Midtrans snap token"
+                        },
+                        "redirect_url": {
+                          "type": "string",
+                          "description": "Payment page URL"
+                        },
+                        "order_id": {
+                          "type": "string"
+                        },
+                        "gross_amount": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/midtrans/notification": {
+      "post": {
+        "summary": "Handle Midtrans payment notification",
+        "tags": [
+          "Midtrans"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "Midtrans notification payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification processed successfully"
+          },
+          "400": {
+            "description": "Invalid notification"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/midtrans/status/{transaction_id}": {
+      "get": {
+        "summary": "Check transaction status",
+        "tags": [
+          "Midtrans"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction status retrieved successfully"
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
+    "/api/midtrans/cancel/{transaction_id}": {
+      "post": {
+        "summary": "Cancel transaction",
+        "tags": [
+          "Midtrans"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "transaction_id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Transaction ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transaction cancelled successfully"
+          },
+          "404": {
+            "description": "Transaction not found"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
+        }
+      }
+    },
     "/api/orders": {
       "post": {
-        "summary": "Create a new order transaction",
+        "summary": "Create a new order with Midtrans payment",
         "tags": [
           "Orders"
         ],
@@ -2792,34 +3437,86 @@
             "application/json": {
               "schema": {
                 "type": "object",
+                "required": [
+                  "total_price",
+                  "payment_method",
+                  "payment_method_channel",
+                  "shipping_name",
+                  "shipping_code",
+                  "shipping_service",
+                  "shipping_cost",
+                  "shipping_etd",
+                  "shipping_weight",
+                  "receiver_name",
+                  "receiver_phone",
+                  "receiver_address",
+                  "receiver_subdistrict_id",
+                  "receiver_subdistrict_name",
+                  "receiver_city_id",
+                  "receiver_city_name",
+                  "receiver_state_id",
+                  "receiver_state_name",
+                  "receiver_zip_code",
+                  "items"
+                ],
                 "properties": {
                   "total_price": {
                     "type": "number",
-                    "example": 50000
+                    "description": "Total price before discount",
+                    "example": 2889000
                   },
-                  "shipping_address": {
-                    "type": "string",
-                    "example": "Jl. Merdeka No.123"
+                  "coupon_code": {
+                    "type": "array",
+                    "description": "Optional array of coupon codes",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "DISCOUNT5",
+                      "FREEONGKIR"
+                    ]
                   },
                   "payment_method": {
                     "type": "string",
+                    "enum": [
+                      "VA",
+                      "EWALLET",
+                      "QRIS",
+                      "CC"
+                    ],
                     "example": "VA"
                   },
                   "payment_method_channel": {
                     "type": "string",
                     "example": "BCA"
                   },
+                  "shipping_name": {
+                    "type": "string",
+                    "example": "SiCepat Express"
+                  },
+                  "shipping_code": {
+                    "type": "string",
+                    "example": "sicepat"
+                  },
                   "shipping_service": {
                     "type": "string",
-                    "example": "JNE REG"
+                    "example": "GOKIL"
+                  },
+                  "shipping_description": {
+                    "type": "string",
+                    "example": "Cargo Per Kg (Minimal 10kg)"
                   },
                   "shipping_cost": {
                     "type": "number",
-                    "example": 9000
+                    "example": 38500
                   },
                   "shipping_etd": {
                     "type": "string",
-                    "example": "2-3 hari"
+                    "example": "2-3 day"
+                  },
+                  "shipping_weight": {
+                    "type": "number",
+                    "example": 10500
                   },
                   "receiver_name": {
                     "type": "string",
@@ -2829,17 +3526,49 @@
                     "type": "string",
                     "example": "08123456789"
                   },
+                  "receiver_address": {
+                    "type": "string",
+                    "example": "Jl. Merdeka No.123"
+                  },
                   "receiver_address_detail": {
                     "type": "string",
                     "example": "RT 03 / RW 05, dekat warung bu Sari"
                   },
                   "receiver_subdistrict_id": {
-                    "type": "integer",
-                    "example": 123456
+                    "type": "string",
+                    "example": "3603281001"
                   },
                   "receiver_subdistrict_name": {
                     "type": "string",
-                    "example": "Cempaka Putih"
+                    "example": "KELAPA DUA"
+                  },
+                  "receiver_district_id": {
+                    "type": "string",
+                    "example": "360328"
+                  },
+                  "receiver_district_name": {
+                    "type": "string",
+                    "example": "KELAPA DUA"
+                  },
+                  "receiver_city_id": {
+                    "type": "string",
+                    "example": "3603"
+                  },
+                  "receiver_city_name": {
+                    "type": "string",
+                    "example": "KABUPATEN TANGERANG"
+                  },
+                  "receiver_state_id": {
+                    "type": "string",
+                    "example": "36"
+                  },
+                  "receiver_state_name": {
+                    "type": "string",
+                    "example": "BANTEN"
+                  },
+                  "receiver_zip_code": {
+                    "type": "string",
+                    "example": "15831"
                   },
                   "items": {
                     "type": "array",
@@ -2847,16 +3576,17 @@
                       "type": "object",
                       "properties": {
                         "product_id": {
-                          "type": "integer",
-                          "example": 1
+                          "type": "string",
+                          "description": "Encrypted product ID",
+                          "example": "8647400b88aca0ce58a52a58b0efc638"
                         },
                         "quantity": {
                           "type": "integer",
-                          "example": 2
+                          "example": 1
                         },
                         "price": {
                           "type": "number",
-                          "example": 25000
+                          "example": 2160000
                         }
                       }
                     }
@@ -2865,18 +3595,97 @@
               }
             }
           }
+        },
+        "responses": {
+          "201": {
+            "description": "Order created successfully with payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "example": 201
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Order created successfully"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "order": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string",
+                              "description": "Encrypted order ID"
+                            },
+                            "invoice_number": {
+                              "type": "string"
+                            },
+                            "total_price": {
+                              "type": "number"
+                            },
+                            "status": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "payment": {
+                          "type": "object",
+                          "properties": {
+                            "token": {
+                              "type": "string",
+                              "description": "Midtrans snap token"
+                            },
+                            "redirect_url": {
+                              "type": "string",
+                              "description": "Payment page URL"
+                            },
+                            "transaction_id": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "coupons_applied": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "code": {
+                                "type": "string"
+                              },
+                              "discount_amount": {
+                                "type": "number"
+                              },
+                              "type": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - validation errors"
+          },
+          "404": {
+            "description": "Product not found or coupon invalid"
+          },
+          "500": {
+            "description": "Internal server error"
+          }
         }
       },
       "get": {
         "summary": "Get all orders",
-        "tags": [
-          "Orders"
-        ]
-      }
-    },
-    "/api/orders/me": {
-      "get": {
-        "summary": "Get all orders by authenticated user",
         "tags": [
           "Orders"
         ]
@@ -4411,7 +5220,7 @@
     },
     "/api/reports/total-revenue": {
       "get": {
-        "summary": "Get total revenue",
+        "summary": "Get total revenue OR Web Orders in Rupiah",
         "tags": [
           "Reports"
         ],
@@ -4427,13 +5236,29 @@
     },
     "/api/reports/total-orders": {
       "get": {
-        "summary": "Get total number of orders",
+        "summary": "Get total number of orders OR Web Orders",
         "tags": [
           "Reports"
         ],
         "responses": {
           "200": {
             "description": "Total orders fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/this-month-orders": {
+      "get": {
+        "summary": "Get total number of orders for current month OR This Month Order",
+        "tags": [
+          "Reports"
+        ],
+        "responses": {
+          "200": {
+            "description": "This month orders fetched successfully"
           },
           "500": {
             "description": "Server error"
@@ -4555,13 +5380,73 @@
     },
     "/api/reports/top-selling-products": {
       "get": {
-        "summary": "Get top 5 selling products",
+        "summary": "Get top 10 selling products OR Popular product by total order",
         "tags": [
           "Reports"
         ],
         "responses": {
           "200": {
             "description": "Top selling products fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/popular-products-by-cart": {
+      "get": {
+        "summary": "Get popular products by cart count",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Number of products to return",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Popular products by cart fetched successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/reports/popular-products-by-reviews": {
+      "get": {
+        "summary": "Get popular products by review count",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 100
+            },
+            "description": "Number of products to return",
+            "example": 10
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Popular products by reviews fetched successfully"
           },
           "500": {
             "description": "Server error"
@@ -4649,86 +5534,6 @@
         }
       }
     },
-    "/api/reports/fulfillment-rate": {
-      "get": {
-        "summary": "Get order fulfillment rate",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Fulfillment rate fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/reports/refund-requests": {
-      "get": {
-        "summary": "Get refund request count",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Refund requests fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/reports/return-rate": {
-      "get": {
-        "summary": "Get return rate",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Return rate fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/reports/page-views": {
-      "get": {
-        "summary": "Get total page views",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Page views fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/reports/product-views": {
-      "get": {
-        "summary": "Get product views count per product",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Product views fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
     "/api/reports/top-articles": {
       "get": {
         "summary": "Get top 5 most viewed articles",
@@ -4754,22 +5559,6 @@
         "responses": {
           "200": {
             "description": "Blog views fetched successfully"
-          },
-          "500": {
-            "description": "Server error"
-          }
-        }
-      }
-    },
-    "/api/reports/blog-comments": {
-      "get": {
-        "summary": "Get total blog comments",
-        "tags": [
-          "Reports"
-        ],
-        "responses": {
-          "200": {
-            "description": "Blog comments fetched successfully"
           },
           "500": {
             "description": "Server error"
