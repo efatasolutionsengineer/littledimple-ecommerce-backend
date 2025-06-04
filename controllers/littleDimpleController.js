@@ -78,10 +78,26 @@ module.exports = {
       };
 
       // Reviews (ambil user info juga)
-      const selectedReviews = info?.reviews_selected || [];
+      let selectedReviews = [];
+
+      try {
+        // Parse the string to an array
+        selectedReviews = JSON.parse(info?.reviews_selected || '[]');
+
+        // Ensure it's an array of integers
+        if (!Array.isArray(selectedReviews)) selectedReviews = [];
+
+        selectedReviews = selectedReviews
+          .map(id => parseInt(id, 10))
+          .filter(Number.isInteger);
+      } catch (e) {
+        console.error('Invalid reviews_selected format:', e);
+        selectedReviews = [];
+      }
+      
       let reviewsRaw = [];
 
-      if(selectedReviews && selectedReviews.length > 0){
+      if (selectedReviews.length > 0) {
         reviewsRaw = await knex('reviews as r')
           .join('users as u', 'r.user_id', 'u.id')
           .select(
@@ -96,6 +112,7 @@ module.exports = {
           .orderBy('r.created_at', 'desc')
           .limit(10);
       }
+
 
       // Call to action (ambil dari tabel call_to_action)
       const call_to_action = {
