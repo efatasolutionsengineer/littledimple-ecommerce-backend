@@ -35,7 +35,7 @@ const settingsRoutes = require('./routes/settingsRoute');
 const { registerUser } = require('./models/utils');
 
 // Configure CORS
-const corsOptions = configureCors(process.env.cors);
+const corsOptions = configureCors(process.env.CORS);
 
 const app = express();
 
