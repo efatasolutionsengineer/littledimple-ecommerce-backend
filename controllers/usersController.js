@@ -530,38 +530,38 @@ module.exports = {
         }
     },
 
-    /**
-     * @swagger
-     * /api/users/grabdata_kecamatan:
-     *   post:
-     *     summary: Grab ~8000 kecamatan data from 514 kabupaten via external API
-     *     tags: [Users]
-     *     security:
-     *       - cookieAuth: []
-     *     requestBody:
-     *       required: false
-     *       content:
-     *         application/json:
-     *           schema:
-     *             type: object
-     *             properties:
-     *               api_key:
-     *                 type: string
-     *                 example: "YOUR_API_KEY"
-     *                 description: "Optional API key, will use environment variable if not provided"
-     *               batch_size:
-     *                 type: integer
-     *                 example: 25
-     *                 description: "Number of kabupaten to process in each batch (default: 25)"
-     *               delay_ms:
-     *                 type: integer
-     *                 example: 750
-     *                 description: "Delay between API calls in milliseconds (default: 750ms)"
-     *               max_retries:
-     *                 type: integer
-     *                 example: 3
-     *                 description: "Maximum retry attempts for failed API calls (default: 3)"
-     */
+    // /**
+    //  * @swagger
+    //  * /api/users/grabdata_kecamatan:
+    //  *   post:
+    //  *     summary: Grab ~8000 kecamatan data from 514 kabupaten via external API
+    //  *     tags: [Users]
+    //  *     security:
+    //  *       - cookieAuth: []
+    //  *     requestBody:
+    //  *       required: false
+    //  *       content:
+    //  *         application/json:
+    //  *           schema:
+    //  *             type: object
+    //  *             properties:
+    //  *               api_key:
+    //  *                 type: string
+    //  *                 example: "YOUR_API_KEY"
+    //  *                 description: "Optional API key, will use environment variable if not provided"
+    //  *               batch_size:
+    //  *                 type: integer
+    //  *                 example: 25
+    //  *                 description: "Number of kabupaten to process in each batch (default: 25)"
+    //  *               delay_ms:
+    //  *                 type: integer
+    //  *                 example: 750
+    //  *                 description: "Delay between API calls in milliseconds (default: 750ms)"
+    //  *               max_retries:
+    //  *                 type: integer
+    //  *                 example: 3
+    //  *                 description: "Maximum retry attempts for failed API calls (default: 3)"
+    //  */
     grabDataKecamatan: async (req, res) => {
         const API_KEY = "60a1dda5d39eae25a99b6ee3ecdb2c9e6e93cf078dfb502d8765aa0a33e5fd80";
         const BATCH_SIZE = req.body.batch_size || 25; // Optimal for 514 kabupaten
@@ -791,38 +791,38 @@ module.exports = {
         }
     },
 
-    /**
- * @swagger
- * /api/users/grabdata_kelurahan:
- *   post:
- *     summary: Grab ~84000 kelurahan data from ~8000 kecamatan via external API
- *     tags: [Users]
- *     security:
- *       - cookieAuth: []
- *     requestBody:
- *       required: false
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               api_key:
- *                 type: string
- *                 example: "YOUR_API_KEY"
- *                 description: "Optional API key, will use environment variable if not provided"
- *               batch_size:
- *                 type: integer
- *                 example: 20
- *                 description: "Number of kecamatan to process in each batch (default: 20)"
- *               delay_ms:
- *                 type: integer
- *                 example: 500
- *                 description: "Delay between API calls in milliseconds (default: 500ms)"
- *               max_retries:
- *                 type: integer
- *                 example: 3
- *                 description: "Maximum retry attempts for failed API calls (default: 3)"
- */
+    // /**
+    //  * @swagger
+    //  * /api/users/grabdata_kelurahan:
+    //  *   post:
+    //  *     summary: Grab ~84000 kelurahan data from ~8000 kecamatan via external API
+    //  *     tags: [Users]
+    //  *     security:
+    //  *       - cookieAuth: []
+    //  *     requestBody:
+    //  *       required: false
+    //  *       content:
+    //  *         application/json:
+    //  *           schema:
+    //  *             type: object
+    //  *             properties:
+    //  *               api_key:
+    //  *                 type: string
+    //  *                 example: "YOUR_API_KEY"
+    //  *                 description: "Optional API key, will use environment variable if not provided"
+    //  *               batch_size:
+    //  *                 type: integer
+    //  *                 example: 20
+    //  *                 description: "Number of kecamatan to process in each batch (default: 20)"
+    //  *               delay_ms:
+    //  *                 type: integer
+    //  *                 example: 500
+    //  *                 description: "Delay between API calls in milliseconds (default: 500ms)"
+    //  *               max_retries:
+    //  *                 type: integer
+    //  *                 example: 3
+    //  *                 description: "Maximum retry attempts for failed API calls (default: 3)"
+    //  */
     grabDataKelurahan: async (req, res) => {
         const API_KEY = "60a1dda5d39eae25a99b6ee3ecdb2c9e6e93cf078dfb502d8765aa0a33e5fd80";
         const BATCH_SIZE = req.body.batch_size || 20; // Smaller batch for ~8000 kecamatan

@@ -112,67 +112,67 @@ async function getNominatimPostalCode(kelurahanName, city, country = 'Indonesia'
 };
 
 module.exports = {
-  /**
-   * @swagger
-   * /api/rajaongkir/provinces:
-   *   get:
-   *     summary: Mendapatkan daftar provinsi
-   *     tags: [RajaOngkir]
-   *     responses:
-   *       200:
-   *         description: Daftar provinsi berhasil diambil
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 status:
-   *                   type: integer
-   *                 message:
-   *                   type: string
-   *                 data:
-   *                   type: array
-   *                   items:
-   *                     $ref: '#/components/schemas/Province'
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/provinces:
+  //  *   get:
+  //  *     summary: Mendapatkan daftar provinsi
+  //  *     tags: [RajaOngkir]
+  //  *     responses:
+  //  *       200:
+  //  *         description: Daftar provinsi berhasil diambil
+  //  *         content:
+  //  *           application/json:
+  //  *             schema:
+  //  *               type: object
+  //  *               properties:
+  //  *                 status:
+  //  *                   type: integer
+  //  *                 message:
+  //  *                   type: string
+  //  *                 data:
+  //  *                   type: array
+  //  *                   items:
+  //  *                     $ref: '#/components/schemas/Province'
+  //  */
   getProvinces: async (req, res) => {
     const api = getBestAPI();
     return handleResponse(res, api.getProvinces(), 'Failed to fetch provinces');
   },
 
-  /**
-   * @swagger
-   * /api/rajaongkir/provinces/{id}:
-   *   get:
-   *     summary: Mendapatkan detail provinsi berdasarkan ID
-   *     tags: [RajaOngkir]
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: ID provinsi
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/provinces/{id}:
+  //  *   get:
+  //  *     summary: Mendapatkan detail provinsi berdasarkan ID
+  //  *     tags: [RajaOngkir]
+  //  *     parameters:
+  //  *       - in: path
+  //  *         name: id
+  //  *         required: true
+  //  *         schema:
+  //  *           type: string
+  //  *         description: ID provinsi
+  //  */
   getProvince: async (req, res) => {
     const api = getBestAPI();
     const { id } = req.params;
     return handleResponse(res, api.getProvince(id), 'Failed to fetch province');
   },
 
-  /**
-   * @swagger
-   * /api/rajaongkir/cities:
-   *   get:
-   *     summary: Mendapatkan daftar kota/kabupaten
-   *     tags: [RajaOngkir]
-   *     parameters:
-   *       - in: query
-   *         name: province
-   *         schema:
-   *           type: string
-   *         description: ID provinsi untuk filter kota
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/cities:
+  //  *   get:
+  //  *     summary: Mendapatkan daftar kota/kabupaten
+  //  *     tags: [RajaOngkir]
+  //  *     parameters:
+  //  *       - in: query
+  //  *         name: province
+  //  *         schema:
+  //  *           type: string
+  //  *         description: ID provinsi untuk filter kota
+  //  */
   getCities: async (req, res) => {
     const api = getBestAPI();
     const params = req.query;
@@ -186,40 +186,40 @@ module.exports = {
     }
   },
 
-  /**
-   * @swagger
-   * /api/rajaongkir/cities/{id}:
-   *   get:
-   *     summary: Mendapatkan detail kota berdasarkan ID
-   *     tags: [RajaOngkir]
-   *     parameters:
-   *       - in: path
-   *         name: id
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: ID kota
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/cities/{id}:
+  //  *   get:
+  //  *     summary: Mendapatkan detail kota berdasarkan ID
+  //  *     tags: [RajaOngkir]
+  //  *     parameters:
+  //  *       - in: path
+  //  *         name: id
+  //  *         required: true
+  //  *         schema:
+  //  *           type: string
+  //  *         description: ID kota
+  //  */
   getCity: async (req, res) => {
     const api = getBestAPI();
     const { id } = req.params;
     return handleResponse(res, api.getCity(id), 'Failed to fetch city');
   },
 
-  /**
-   * @swagger
-   * /api/rajaongkir/subdistricts:
-   *   get:
-   *     summary: Mendapatkan daftar kecamatan (Pro only)
-   *     tags: [RajaOngkir]
-   *     parameters:
-   *       - in: query
-   *         name: city
-   *         required: true
-   *         schema:
-   *           type: string
-   *         description: ID kota
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/subdistricts:
+  //  *   get:
+  //  *     summary: Mendapatkan daftar kecamatan (Pro only)
+  //  *     tags: [RajaOngkir]
+  //  *     parameters:
+  //  *       - in: query
+  //  *         name: city
+  //  *         required: true
+  //  *         schema:
+  //  *           type: string
+  //  *         description: ID kota
+  //  */
   getSubDistricts: async (req, res) => {
     if (!proAPI) {
       return res.status(403).json({
@@ -232,19 +232,19 @@ module.exports = {
     return handleResponse(res, proAPI.getSubDistrict(params), 'Failed to fetch sub-districts');
   },
 
-  /**
-   * @swagger
-   * /api/rajaongkir/cost:
-   *   post:
-   *     summary: Menghitung ongkos kirim
-   *     tags: [RajaOngkir]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/CostRequest'
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/cost:
+  //  *   post:
+  //  *     summary: Menghitung ongkos kirim
+  //  *     tags: [RajaOngkir]
+  //  *     requestBody:
+  //  *       required: true
+  //  *       content:
+  //  *         application/json:
+  //  *           schema:
+  //  *             $ref: '#/components/schemas/CostRequest'
+  //  */
   getCost: async (req, res) => {
     const api = getBestAPI();
     const params = req.body;
@@ -595,19 +595,19 @@ module.exports = {
   },
 
   // Waybill tracking methods
-  /**
-   * @swagger
-   * /api/rajaongkir/waybill/jne:
-   *   post:
-   *     summary: Melacak pengiriman JNE
-   *     tags: [RajaOngkir]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             $ref: '#/components/schemas/WaybillRequest'
-   */
+  // /**
+  //  * @swagger
+  //  * /api/rajaongkir/waybill/jne:
+  //  *   post:
+  //  *     summary: Melacak pengiriman JNE
+  //  *     tags: [RajaOngkir]
+  //  *     requestBody:
+  //  *       required: true
+  //  *       content:
+  //  *         application/json:
+  //  *           schema:
+  //  *             $ref: '#/components/schemas/WaybillRequest'
+  //  */
   getJNEWaybill: async (req, res) => {
     if (!proAPI && !basicAPI) {
       return res.status(403).json({

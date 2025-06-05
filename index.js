@@ -16,7 +16,7 @@ const categoriesRoutes = require('./routes/categoriesRoutes');
 const ordersRoutes = require('./routes/ordersRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
-const shippingRoutes = require('./routes/shippingRoutes');
+// const shippingRoutes = require('./routes/shippingRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const voucherRoutes = require('./routes/voucherRoutes');
 const blogPostRoutes = require('./routes/blogPostRoutes');
@@ -41,7 +41,7 @@ const app = express();
 
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const { encryptId } = require('./models/encryption');
+// const { encryptId } = require('./models/encryption');
 
 const swaggerOptions = {
     swaggerDefinition: {
@@ -120,7 +120,7 @@ app.use('/api/categories', categoriesRoutes);
 app.use('/api/orders', ordersRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/reviews', reviewRoutes);
-app.use('/api/shipping', shippingRoutes);
+// app.use('/api/shipping', shippingRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/vouchers', voucherRoutes);
 app.use('/api/blog-posts', blogPostRoutes);
