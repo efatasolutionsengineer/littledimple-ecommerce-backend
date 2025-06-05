@@ -13,9 +13,6 @@ function configureCors(allowedOrigins) {
       methods: ["GET", "POST", "PUT", "DELETE"],
       allowedHeaders: [
         "Content-Type",
-        "Authorization",
-        "x-password",
-        "x-username",
       ],
       credentials: true,
     };

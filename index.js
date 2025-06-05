@@ -111,7 +111,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 // Configure CORS
-// app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
