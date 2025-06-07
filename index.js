@@ -30,6 +30,7 @@ const warrantyRoutes = require('./routes/warrantyRoutes');
 const couponsRoutes = require('./routes/couponsRoutes');
 const midtransRoutes = require('./routes/midtransRoutes');
 const settingsRoutes = require('./routes/settingsRoute');
+const galleryRoutes = require('./routes/galleryRoutes');
 
 
 const { registerUser } = require('./models/utils');
@@ -134,6 +135,7 @@ app.use('/api/warranty', warrantyRoutes);
 app.use('/api/coupons', couponsRoutes);
 app.use('/api/midtrans', midtransRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/gallery', galleryRoutes);
 
 // Serve static files for payment pages
 // app.use('/payment', express.static('public/payment'));
