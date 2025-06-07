@@ -1,10 +1,9 @@
 // controllers/galleryController.js
 const knex = require('../db/knex');
 const { encryptId, decryptId } = require('../models/encryption.js');
-const { processAndUploadImage, uploadVideo, generateSlug, useLocalStorage } = require('../models/googleCloudStorage');
+const { processAndUploadImage, uploadVideo, generateSlug } = require('../models/googleCloudStorage');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
-const { processGalleryUrls } = require('./mediaController');
 
 // Initialize storage with Application Default Credentials
 const storage = new Storage({
@@ -178,53 +177,53 @@ module.exports = {
    */
   uploadMedia: async (req, res) => {
     try {
-        const { title, tag } = req.body;
-        
-        if (!req.files || req.files.length === 0) {
+      const { title, tag } = req.body;
+      
+      if (!req.files || req.files.length === 0) {
         return res.status(400).json({ message: 'No files uploaded' });
-        }
-        
-        const results = [];
-        
-        for (const file of req.files) {
+      }
+      
+      const results = [];
+      
+      for (const file of req.files) {
         let mediaData = {
-            title: title || file.originalname,
-            slug: generateSlug(title || file.originalname),
-            tag: tag || null,
-            updated_at: new Date()
+          title: title || file.originalname,
+          slug: generateSlug(title || file.originalname),
+          tag: tag || null,
+          updated_at: new Date()
         };
         
         // Check if file is video or image
         if (file.mimetype.startsWith('video/')) {
-            mediaData.type = 'video';
-            const videoData = await uploadVideo(file);
-            mediaData = { ...mediaData, ...videoData };
+          mediaData.type = 'video';
+          const videoData = await uploadVideo(file);
+          mediaData = { ...mediaData, ...videoData };
         } else if (file.mimetype.startsWith('image/')) {
-            mediaData.type = 'image';
-            const imageData = await processAndUploadImage(file);
-            mediaData = { ...mediaData, ...imageData };
+          mediaData.type = 'image';
+          const imageData = await processAndUploadImage(file);
+          mediaData = { ...mediaData, ...imageData };
         } else {
-            continue; // Skip unsupported files
+          continue; // Skip unsupported files
         }
         
         // Save to database
         const [gallery] = await knex('media_gallery')
-            .insert(mediaData)
-            .returning('*');
+          .insert(mediaData)
+          .returning('*');
         
         // Process URLs and encrypt ID
         const processedGallery = await processGalleryItemUrls(gallery);
         
         results.push(processedGallery);
-        }
-        
-        res.status(201).json({ 
+      }
+      
+      res.status(201).json({ 
         message: 'Media uploaded successfully', 
         data: results 
-        });
+      });
     } catch (err) {
-        console.error('Upload error:', err);
-        res.status(500).json({ message: err.message });
+      console.error('Upload error:', err);
+      res.status(500).json({ message: err.message });
     }
   },
   
@@ -271,7 +270,7 @@ module.exports = {
       
       res.status(200).json({ 
         message: 'Gallery items retrieved successfully', 
-        data: results
+        results
       });
     } catch (err) {
       console.error('Error getting gallery items:', err);
