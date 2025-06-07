@@ -21,85 +21,29 @@ module.exports = {
    * Media proxy handler
    */
   serveMedia: async (req, res) => {
-    const mediaPath = req.params[0]; // Get the full path from wildcard route
-    
     try {
-      // First, check for local file
-      if (mediaPath.startsWith('uploads/')) {
-        const localPath = path.join(__dirname, '../public', mediaPath);
+      // If using specific routes
+      if (req.params.year && req.params.month) {
+        const { type, year, month, size, filename } = req.params;
         
-        // Use cache to avoid checking file system repeatedly
-        const cacheKey = `local:${localPath}`;
-        let exists = localFileCache.get(cacheKey);
-        
-        if (exists === undefined) {
-          try {
-            await fs.access(localPath);
-            exists = true;
-            localFileCache.set(cacheKey, true);
-          } catch {
-            exists = false;
-            localFileCache.set(cacheKey, false);
-          }
+        // Construct the path based on parameters
+        let mediaPath;
+        if (size) {
+          // For images with size
+          mediaPath = `${type}/${year}/${month}/${size}/${filename}`;
+        } else {
+          // For videos
+          mediaPath = `${type}/${year}/${month}/${filename}`;
         }
         
-        if (exists) {
-          // Set content type
-          const ext = path.extname(localPath).toLowerCase();
-          const contentType = getContentType(ext);
-          res.setHeader('Content-Type', contentType);
-          
-          // Add caching headers
-          res.setHeader('Cache-Control', 'public, max-age=86400'); // 24 hours
-          
-          // Stream the file
-          const fileStream = fs.createReadStream(localPath);
-          fileStream.on('error', (err) => {
-            console.error(`Error streaming local file: ${localPath}`, err);
-            if (!res.headersSent) {
-              res.status(500).send('Error streaming file');
-            }
-          });
-          
-          fileStream.pipe(res);
-          return;
-        }
+        return serveMediaFile(mediaPath, req, res);
       }
       
-      // If not found locally, try to serve from GCS
-      // Remove leading slash if present
-      const gcsPath = mediaPath.startsWith('/') ? mediaPath.substring(1) : mediaPath;
-      
-      console.log(`Fetching from GCS: ${gcsPath}`);
-      
-      // Get file reference
-      const file = bucket.file(gcsPath);
-      
-      // Check if file exists in GCS
-      const [exists] = await file.exists();
-      if (!exists) {
-        return res.status(404).send('File not found');
-      }
-      
-      // Get metadata
-      const [metadata] = await file.getMetadata();
-      
-      // Set appropriate headers
-      res.setHeader('Content-Type', metadata.contentType || getContentType(path.extname(gcsPath)));
-      res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
-      
-      // Download and stream to response
-      file.createReadStream()
-        .on('error', (err) => {
-          console.error(`Error streaming from GCS: ${gcsPath}`, err);
-          if (!res.headersSent) {
-            res.status(500).send('Error streaming file');
-          }
-        })
-        .pipe(res);
-        
+      // For wildcard route
+      const mediaPath = req.params.path;
+      return serveMediaFile(mediaPath, req, res);
     } catch (err) {
-      console.error(`Error serving media ${mediaPath}:`, err);
+      console.error('Error in serveMedia:', err);
       if (!res.headersSent) {
         res.status(500).send('Error serving media');
       }
@@ -188,5 +132,58 @@ function convertGcsUrlToProxyUrl(gcsUrl) {
   } catch (err) {
     console.error('Error converting GCS URL:', err);
     return gcsUrl;
+  }
+}
+
+async function serveMediaFile(mediaPath, req, res) {
+  try {
+    // First, check for local file
+    if (mediaPath.startsWith('uploads/')) {
+      const localPath = path.join(__dirname, '../public', mediaPath);
+      
+      try {
+        await fs.access(localPath);
+        
+        // Set content type
+        const ext = path.extname(localPath).toLowerCase();
+        const contentType = getContentType(ext);
+        res.setHeader('Content-Type', contentType);
+        
+        // Stream the file
+        const fileStream = fs.createReadStream(localPath);
+        fileStream.pipe(res);
+        return;
+      } catch (err) {
+        // File not found locally, try GCS
+        console.log('File not found locally, trying GCS...');
+      }
+    }
+    
+    // Try to serve from GCS
+    console.log(`Fetching from GCS: ${mediaPath}`);
+    
+    // Get file reference
+    const file = bucket.file(mediaPath);
+    
+    // Check if file exists in GCS
+    const [exists] = await file.exists();
+    if (!exists) {
+      return res.status(404).send('File not found');
+    }
+    
+    // Get metadata
+    const [metadata] = await file.getMetadata();
+    
+    // Set headers
+    res.setHeader('Content-Type', metadata.contentType || getContentType(path.extname(mediaPath)));
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    
+    // Stream the file
+    file.createReadStream().pipe(res);
+  } catch (err) {
+    console.error(`Error serving media file ${mediaPath}:`, err);
+    if (!res.headersSent) {
+      res.status(500).send('Error serving media file');
+    }
   }
 }

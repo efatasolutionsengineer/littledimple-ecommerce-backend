@@ -267,12 +267,7 @@ module.exports = {
       const galleries = await query.orderBy('created_at', 'desc');
       
       // Process all items to add signed URLs
-      //   const results = await Promise.all(galleries.map(processGalleryItemUrls));
-      const results = galleries.map(gallery => {
-      const processed = processGalleryUrls(gallery);
-      processed.id = encryptId(gallery.id);
-        return processed;
-      });
+      const results = await Promise.all(galleries.map(processGalleryItemUrls));
       
       res.status(200).json({ 
         message: 'Gallery items retrieved successfully', 
