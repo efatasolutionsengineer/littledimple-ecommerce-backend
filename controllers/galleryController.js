@@ -1,7 +1,7 @@
 // controllers/galleryController.js
 const knex = require('../db/knex');
 const { encryptId, decryptId } = require('../models/encryption.js');
-const { processAndUploadImage, uploadVideo, generateSlug } = require('../utils/googleCloudStorage');
+const { processAndUploadImage, uploadVideo, generateSlug } = require('../models/googleCloudStorage');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
 
