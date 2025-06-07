@@ -28,8 +28,8 @@ router.get('/slug/:slug', galleryController.getMediaBySlug);
 router.get('/stream/:id', galleryController.streamVideo);
 
 // Protected routes (require authentication)
-router.use(authMiddleware);
 router.post('/upload', upload.array('files', 10), galleryController.uploadMedia);
+router.use(authMiddleware);
 router.put('/:id', galleryController.updateMedia);
 router.delete('/:id', galleryController.deleteMedia);
 
