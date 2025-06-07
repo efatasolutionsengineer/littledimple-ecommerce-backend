@@ -4,6 +4,7 @@ const { encryptId, decryptId } = require('../models/encryption.js');
 const { processAndUploadImage, uploadVideo, generateSlug, useLocalStorage } = require('../models/googleCloudStorage');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
+const { processGalleryUrls } = require('./mediaController');
 
 // Initialize storage with Application Default Credentials
 const storage = new Storage({
@@ -266,11 +267,16 @@ module.exports = {
       const galleries = await query.orderBy('created_at', 'desc');
       
       // Process all items to add signed URLs
-      const results = await Promise.all(galleries.map(processGalleryItemUrls));
+      //   const results = await Promise.all(galleries.map(processGalleryItemUrls));
+      const results = galleries.map(gallery => {
+      const processed = processGalleryUrls(gallery);
+      processed.id = encryptId(gallery.id);
+        return processed;
+      });
       
       res.status(200).json({ 
         message: 'Gallery items retrieved successfully', 
-        results
+        data: results
       });
     } catch (err) {
       console.error('Error getting gallery items:', err);
