@@ -81,6 +81,7 @@ app.get('/openapi.json', (req, res) => {
 
 // app.use(express.static('public'));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Serve Swagger UI
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
