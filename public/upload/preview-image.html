@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image from Link</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #3498db;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="url"]:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+        }
+
+        .button-group {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        #previewBtn {
+            background-color: #3498db;
+            color: white;
+        }
+
+        #previewBtn:hover {
+            background-color: #2980b9;
+        }
+
+        #submitBtn {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        #submitBtn:hover {
+            background-color: #27ae60;
+        }
+
+        #imagePreview {
+            margin-top: 30px;
+            display: none;
+        }
+
+        #previewImage {
+            max-width: 100%;
+            max-height: 400px;
+            display: block;
+            margin: 0 auto;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Image Loader</h1>
+        
+        <form id="imageForm">
+            <div class="form-group">
+                <label for="imageUrl">Link:</label>
+                <input type="url" id="imageUrl" name="imageUrl" placeholder="Enter image URL" required>
+                <div id="urlError" class="error"></div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" id="previewBtn">Preview</button>
+                <!-- <button type="submit" id="submitBtn">Submit</button> -->
+            </div>
+        </form>
+        
+        <div id="imagePreview">
+            <h2>Image Preview:</h2>
+            <img id="previewImage" src="" alt="Image preview">
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('previewBtn').addEventListener('click', function() {
+            const imageUrl = document.getElementById('imageUrl').value;
+            const errorElement = document.getElementById('urlError');
+            
+            if(imageUrl) {
+                errorElement.textContent = '';
+                const previewImage = document.getElementById('previewImage');
+                previewImage.src = imageUrl;
+                document.getElementById('imagePreview').style.display = 'block';
+                
+                // Handle image loading errors
+                previewImage.onerror = function() {
+                    errorElement.textContent = 'Failed to load image. Please check the URL.';
+                    document.getElementById('imagePreview').style.display = 'none';
+                };
+            } else {
+                errorElement.textContent = 'Please enter an image URL';
+            }
+        });
+        
+        document.getElementById('imageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const imageUrl = document.getElementById('imageUrl').value;
+            const errorElement = document.getElementById('urlError');
+            
+            if(imageUrl) {
+                errorElement.textContent = '';
+                alert('Image submitted: ' + imageUrl);
+                // Here you would typically send the data to a server
+            } else {
+                errorElement.textContent = 'Please enter an image URL';
+            }
+        });
+    </script>
+</body>
+</html>
