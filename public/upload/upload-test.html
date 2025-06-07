@@ -269,9 +269,10 @@
                     const response = await fetch('/api/gallery/upload', {
                         method: 'POST',
                         body: formData,
-                        headers: token ? {
-                            'Authorization': `Bearer ${token}`
-                        } : {}
+                        // headers: token ? {
+                        //     'Authorization': `Bearer ${token}`
+                        // } : {}
+                        credentials: "include"
                     });
                     
                     const result = await response.json();
