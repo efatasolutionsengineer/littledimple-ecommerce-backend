@@ -1,19 +1,57 @@
 // controllers/galleryController.js
 const knex = require('../db/knex');
 const { encryptId, decryptId } = require('../models/encryption.js');
-const { processAndUploadImage, uploadVideo, generateSlug } = require('../models/googleCloudStorage');
+const { processAndUploadImage, uploadVideo, generateSlug, useLocalStorage } = require('../models/googleCloudStorage');
 const { Storage } = require('@google-cloud/storage');
 const path = require('path');
+const crypto = require('crypto');
 
 // Initialize storage with Application Default Credentials
 const storage = new Storage({
   projectId: process.env.GOOGLE_CLOUD_PROJECT_ID
 });
-
 const bucket = storage.bucket(process.env.GOOGLE_CLOUD_BUCKET_NAME);
 
 /**
- * Helper function to extract filename from a GCS URL
+ * Generate a secure token for media access
+ */
+function generateSecureToken(path, expiry) {
+  const secretKey = process.env.MEDIA_SECRET_KEY || 'default-media-secret-key';
+  const data = `${path}:${expiry}`;
+  return crypto.createHmac('sha256', secretKey).update(data).digest('hex');
+}
+
+/**
+ * Generate a media proxy URL for a given media path
+ * @param {string} originalUrl - Original media URL
+ * @param {number} expiryMinutes - Expiry time in minutes
+ */
+function generateMediaProxyUrl(originalUrl, expiryMinutes = 30) {
+  if (!originalUrl || useLocalStorage()) {
+    return originalUrl;
+  }
+  
+  try {
+    // Extract the path from the GCS URL
+    const urlObj = new URL(originalUrl);
+    const mediaPath = urlObj.pathname;
+    
+    // Calculate expiry timestamp
+    const expiryTimestamp = Math.floor(Date.now() / 1000) + (expiryMinutes * 60);
+    
+    // Generate secure token
+    const token = generateSecureToken(mediaPath, expiryTimestamp);
+    
+    // Create proxy URL
+    return `/api/media/view?path=${encodeURIComponent(mediaPath)}&expires=${expiryTimestamp}&token=${token}`;
+  } catch (err) {
+    console.error('Error generating media proxy URL:', err);
+    return originalUrl;
+  }
+}
+
+/**
+ * Extract filename from a GCS URL
  */
 function getFilenameFromUrl(url) {
   if (!url) return null;
@@ -30,74 +68,44 @@ function getFilenameFromUrl(url) {
 }
 
 /**
- * Generate a signed URL for a file
- * @param {string} url - The full GCS URL
- * @param {number} expiryMinutes - How long the URL should be valid (in minutes)
- */
-async function getSignedUrl(url, expiryMinutes = 15) {
-  try {
-    if (!url || !url.includes('storage.googleapis.com')) {
-      return url; // Return as is if not a GCS URL
-    }
-    
-    const filename = getFilenameFromUrl(url);
-    if (!filename) return url;
-    
-    const file = bucket.file(filename);
-    
-    // Check if file exists
-    const [exists] = await file.exists();
-    if (!exists) {
-      console.warn(`File not found in bucket: ${filename}`);
-      return url;
-    }
-    
-    // Generate signed URL
-    const [signedUrl] = await file.getSignedUrl({
-      version: 'v4',
-      action: 'read',
-      expires: Date.now() + (expiryMinutes * 60 * 1000)
-    });
-    
-    return signedUrl;
-  } catch (err) {
-    console.error('Error generating signed URL:', err);
-    return url; // Return original URL on error
-  }
-}
-
-/**
- * Process a gallery item to add signed URLs for all media
+ * Process a gallery item to add media proxy URLs
  * @param {Object} item - Gallery item from database
  */
 async function processGalleryItemUrls(item) {
   try {
     const result = { ...item };
     
-    // Don't generate signed URLs if we're using local storage
-    if (useLocalStorage()) {
-      result.id = encryptId(item.id);
-      return result;
-    }
-    
+    // Use media proxy URLs for all media
     if (item.type === 'image') {
-      // Generate signed URLs for all image sizes
       if (item.image_small) {
-        result.image_small = await getSignedUrl(item.image_small);
+        result.image_small = generateMediaProxyUrl(item.image_small);
       }
       if (item.image_medium) {
-        result.image_medium = await getSignedUrl(item.image_medium);
+        result.image_medium = generateMediaProxyUrl(item.image_medium);
       }
       if (item.image_high) {
-        result.image_high = await getSignedUrl(item.image_high);
+        result.image_high = generateMediaProxyUrl(item.image_high);
       }
       if (item.image_original) {
-        result.image_original = await getSignedUrl(item.image_original);
+        result.image_original = generateMediaProxyUrl(item.image_original, 5); // Shorter expiry for original
       }
     } else if (item.type === 'video') {
-      // Generate signed URL for video
       if (item.video_link) {
-        result.video_link = await getSignedUrl(item.video_link);
+        result.video_link = generateMediaProxyUrl(item.video_link, 60); // Longer expiry for videos
+      }
+    }
+    
+    // Store original URLs in separate properties for admin use
+    if (!useLocalStorage()) {
+      if (item.type === 'image') {
+        result._original_image_urls = {
+          small: item.image_small,
+          medium: item.image_medium,
+          high: item.image_high,
+          original: item.image_original
+        };
+      } else if (item.type === 'video') {
+        result._original_video_url = item.video_link;
       }
     }
     
@@ -265,7 +273,7 @@ module.exports = {
       
       const galleries = await query.orderBy('created_at', 'desc');
       
-      // Process all items to add signed URLs
+      // Process all items to add media proxy URLs
       const results = await Promise.all(galleries.map(processGalleryItemUrls));
       
       res.status(200).json({ 
@@ -307,7 +315,7 @@ module.exports = {
         return res.status(404).json({ message: 'Gallery item not found' });
       }
       
-      // Process the item to add signed URLs
+      // Process the item to add media proxy URLs
       const result = await processGalleryItemUrls(gallery);
       
       res.status(200).json({ 
@@ -349,7 +357,7 @@ module.exports = {
         return res.status(404).json({ message: 'Gallery item not found' });
       }
       
-      // Process the item to add signed URLs
+      // Process the item to add media proxy URLs
       const result = await processGalleryItemUrls(gallery);
       
       res.status(200).json({ 
@@ -424,7 +432,7 @@ module.exports = {
         .update(updateData)
         .returning('*');
       
-      // Process the updated item to add signed URLs
+      // Process the updated item to add media proxy URLs
       const result = await processGalleryItemUrls(updatedGallery);
       
       res.status(200).json({ 
@@ -511,7 +519,7 @@ module.exports = {
    *         description: Gallery video ID
    *     responses:
    *       302:
-   *         description: Redirect to signed URL for video
+   *         description: Redirect to media proxy URL for video
    */
   streamVideo: async (req, res) => {
     try {
@@ -526,14 +534,162 @@ module.exports = {
         return res.status(404).json({ message: 'Video not found' });
       }
       
-      // Generate a signed URL with longer expiration for video streaming (60 minutes)
-      const signedUrl = await getSignedUrl(gallery.video_link, 60);
+      // Generate a media proxy URL with longer expiration for video streaming (60 minutes)
+      const proxyUrl = generateMediaProxyUrl(gallery.video_link, 60);
       
-      // Redirect to the signed URL
-      res.redirect(signedUrl);
+      // Redirect to the proxy URL
+      res.redirect(proxyUrl);
     } catch (err) {
       console.error('Video streaming error:', err);
       res.status(500).json({ message: 'Error streaming video' });
+    }
+  },
+  
+  /**
+   * @swagger
+   * /api/media/view:
+   *   get:
+   *     summary: Media proxy to serve images and videos securely
+   *     tags: [Gallery]
+   *     parameters:
+   *       - in: query
+   *         name: path
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Media path
+   *       - in: query
+   *         name: expires
+   *         required: true
+   *         schema:
+   *           type: integer
+   *         description: Expiry timestamp
+   *       - in: query
+   *         name: token
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Security token
+   *     responses:
+   *       200:
+   *         description: Media file
+   *       302:
+   *         description: Redirect to signed URL
+   */
+  mediaProxy: async (req, res) => {
+    try {
+      const { path: mediaPath, expires, token } = req.query;
+      
+      if (!mediaPath || !expires || !token) {
+        return res.status(400).json({ message: 'Missing required parameters' });
+      }
+      
+      // Verify expiry
+      const expiryTimestamp = parseInt(expires, 10);
+      if (isNaN(expiryTimestamp) || Date.now() / 1000 > expiryTimestamp) {
+        return res.status(403).json({ message: 'URL has expired' });
+      }
+      
+      // Verify token
+      const expectedToken = generateSecureToken(mediaPath, expiryTimestamp);
+      if (token !== expectedToken) {
+        return res.status(403).json({ message: 'Invalid token' });
+      }
+      
+      // Extract bucket name and filename
+      const pathParts = mediaPath.split('/');
+      const bucketName = pathParts[1];
+      const filename = pathParts.slice(2).join('/');
+      
+      if (!filename) {
+        return res.status(400).json({ message: 'Invalid media path' });
+      }
+      
+      // Get file from bucket
+      const file = bucket.file(filename);
+      
+      // Check if file exists
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ message: 'Media not found' });
+      }
+      
+      // Generate a short-lived signed URL (5 minutes)
+      const [signedUrl] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'read',
+        expires: Date.now() + (5 * 60 * 1000) // 5 minutes
+      });
+      
+      // Get content type to set appropriate headers
+      const [metadata] = await file.getMetadata();
+      const contentType = metadata.contentType;
+      
+      if (contentType && contentType.startsWith('video/')) {
+        // For videos, redirect to the signed URL
+        return res.redirect(signedUrl);
+      }
+      
+      // For images, proxy the content
+      const response = await fetch(signedUrl);
+      if (!response.ok) {
+        return res.status(response.status).json({ message: 'Error fetching media' });
+      }
+      
+      // Get the image data
+      const imageBuffer = await response.arrayBuffer();
+      
+      // Set appropriate headers
+      res.set('Content-Type', contentType || 'application/octet-stream');
+      res.set('Cache-Control', 'public, max-age=300'); // 5 minutes cache
+      
+      // Send the image data
+      res.send(Buffer.from(imageBuffer));
+    } catch (err) {
+      console.error('Media proxy error:', err);
+      res.status(500).json({ message: 'Error serving media' });
+    }
+  },
+  
+  /**
+   * @swagger
+   * /api/gallery/refresh/{id}:
+   *   get:
+   *     summary: Refresh media URLs for a gallery item
+   *     tags: [Gallery]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Gallery item ID
+   *     responses:
+   *       200:
+   *         description: Refreshed gallery item URLs
+   */
+  refreshMediaUrls: async (req, res) => {
+    try {
+      const id = decryptId(req.params.id);
+      
+      const gallery = await knex('media_gallery')
+        .where({ id })
+        .first();
+        
+      if (!gallery) {
+        return res.status(404).json({ message: 'Gallery item not found' });
+      }
+      
+      // Process the item to generate fresh media proxy URLs
+      const result = await processGalleryItemUrls(gallery);
+      
+      res.status(200).json({ 
+        message: 'Gallery item URLs refreshed successfully', 
+        data: result
+      });
+    } catch (err) {
+      console.error('Error refreshing gallery item URLs:', err);
+      res.status(500).json({ message: err.message });
     }
   }
 };
