@@ -352,7 +352,7 @@ const blogPostController = {
                 .select(
                     'bp.*',
                     'c.name as category_name',
-                    'u.name as author_name'
+                    'u.full_name as author_name'
                 )
                 .orderBy('bp.id', 'desc') // Default order by id desc
                 .orderBy(`bp.${sort_by}`, sort_order) // Then by specified field
@@ -463,15 +463,15 @@ const blogPostController = {
      *       - in: query
      *         name: category_id
      *         schema:
-     *           type: integer
-     *         description: Filter by category ID
-     *         example: 1
+     *           type: string
+     *         description: Filter by encrypted category ID
+     *         example: "encrypted_category_id"
      *       - in: query
      *         name: author_id
      *         schema:
-     *           type: integer
-     *         description: Filter by author ID
-     *         example: 1
+     *           type: string
+     *         description: Filter by encrypted author ID
+     *         example: "encrypted_author_id"
      *     responses:
      *       200:
      *         description: Blog posts retrieved successfully
@@ -584,13 +584,13 @@ const blogPostController = {
      *                           nullable: true
      *                           example: "technology"
      *                         category_id:
-     *                           type: integer
+     *                           type: string
      *                           nullable: true
-     *                           example: 1
+     *                           example: "encrypted_category_id"
      *                         author_id:
-     *                           type: integer
+     *                           type: string
      *                           nullable: true
-     *                           example: 1
+     *                           example: "encrypted_author_id"
      *       400:
      *         description: Bad request - invalid parameters
      *         content:
@@ -629,16 +629,43 @@ const blogPostController = {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             const offset = (page - 1) * limit;
-
+            
             // Sorting parameters
             const sort_by = req.query.sort_by || 'created_at';
             const sort_order = req.query.sort_order || 'desc';
-
+            
             // Filter parameters
             const search = req.query.search;
-            const category_id = decryptId(req.query.category_id);
-            const author_id = decryptId(req.query.author_id);
-
+            
+            // Safely handle category_id and author_id decryption
+            let category_id = null;
+            let author_id = null;
+            
+            if (req.query.category_id) {
+                try {
+                    category_id = decryptId(req.query.category_id);
+                } catch (err) {
+                    console.warn('Invalid category_id format:', err.message);
+                    return res.status(400).json({
+                        status: 400,
+                        message: 'Invalid category ID format',
+                        });
+                }
+            }
+            
+            if (req.query.author_id) {
+                try {
+                    author_id = decryptId(req.query.author_id);
+                } catch (err) {
+                    console.warn('Invalid author_id format:', err.message);
+                    return res.status(400).json({
+                        status: 400,
+                        message: 'Invalid author ID format',
+                        data: null
+                    });
+                }
+            }
+            
             // Validate pagination parameters
             if (page < 1) {
                 return res.status(400).json({
@@ -647,7 +674,7 @@ const blogPostController = {
                     data: null
                 });
             }
-
+            
             if (limit < 1 || limit > 100) {
                 return res.status(400).json({
                     status: 400,
@@ -655,11 +682,11 @@ const blogPostController = {
                     data: null
                 });
             }
-
+            
             // Validate sort parameters
             const validSortFields = ['title', 'created_at', 'updated_at', 'author_id', 'category_id'];
             const validSortOrders = ['asc', 'desc'];
-
+            
             if (!validSortFields.includes(sort_by)) {
                 return res.status(400).json({
                     status: 400,
@@ -667,21 +694,22 @@ const blogPostController = {
                     data: null
                 });
             }
-
+            
             if (!validSortOrders.includes(sort_order)) {
                 return res.status(400).json({
                     status: 400,
                     message: 'Invalid sort order. Must be: asc or desc',
-                    data: null
-                });
+                    });
             }
-
+            
             // Build base query with joins for category and author names
+            // Changed to use blog_categories instead of categories
             let baseQuery = knex('blog_posts as bp')
-                .leftJoin('categories as c', 'bp.category_id', 'c.id')
+                .leftJoin('blog_categories as bc', 'bp.category_id', 'bc.id')
                 .leftJoin('users as u', 'bp.author_id', 'u.id')
-                .whereNull('bp.deleted_at');
-
+                .whereNull('bp.deleted_at')
+                .whereNull('bc.deleted_at'); // Add check for deleted categories
+            
             // Apply search filter
             if (search) {
                 baseQuery = baseQuery.where(function() {
@@ -690,53 +718,72 @@ const blogPostController = {
                         .orWhere('bp.slug', 'ilike', `%${search}%`);
                 });
             }
-
+            
             // Apply category filter
             if (category_id) {
                 baseQuery = baseQuery.where('bp.category_id', category_id);
             }
-
+            
             // Apply author filter
             if (author_id) {
                 baseQuery = baseQuery.where('bp.author_id', author_id);
             }
-
+            
             // Get total count for pagination
             const totalCount = await baseQuery.clone()
                 .count('bp.id as count')
                 .first();
-
-            const total = parseInt(totalCount.count);
+            
+            const total = parseInt(totalCount ? totalCount.count : 0);
             const totalPages = Math.ceil(total / limit);
-
+            
             // Get blog posts with pagination and sorting
             const blogPosts = await baseQuery.clone()
                 .select(
                     'bp.*',
-                    'c.name as category_name',
-                    'u.name as author_name'
+                    'bc.name as category_name', // Changed from c.name to bc.name
+                    'u.full_name as author_name'
                 )
-                .orderBy('bp.id', 'desc') // Default order by id desc
-                .orderBy(`bp.${sort_by}`, sort_order) // Then by specified field
+                .orderBy(`bp.${sort_by}`, sort_order)
                 .limit(limit)
                 .offset(offset);
-
-            // Process and encrypt IDs
-            const processedPosts = blogPosts.map(post => ({
-                id: encryptId(post.id),
-                title: post.title,
-                slug: post.slug,
-                content: post.content,
-                image_thumbnail_url: post.image_thumbnail_url,
-                image_meta_url: post.image_meta_url,
-                category_id: post.category_id ? encryptId(post.category_id) : null,
-                author_id: post.author_id ? encryptId(post.author_id) : null,
-                category_name: post.category_name,
-                author_name: post.author_name,
-                created_at: post.created_at,
-                updated_at: post.updated_at
-            }));
-
+            
+            // Process and encrypt IDs with proper error handling
+            const processedPosts = [];
+            
+            for (const post of blogPosts) {
+                try {
+                    // Create a processed post with encrypted IDs and proper null checks
+                    const processedPost = {
+                        id: post.id ? encryptId(post.id) : null,
+                        title: post.title,
+                        slug: post.slug,
+                        content: post.content,
+                        image_main_url: post.image_main_url,
+                        image_thumbnail_url: post.image_thumbnail_url,
+                        image_banner_url: post.image_banner_url,
+                        image_meta_url: post.image_meta_url,
+                        category_id: post.category_id ? encryptId(post.category_id) : null,
+                        author_id: post.author_id ? encryptId(post.author_id) : null,
+                        category_name: post.category_name,
+                        author_name: post.author_name,
+                        created_at: post.created_at,
+                        updated_at: post.updated_at
+                    };
+                    
+                    processedPosts.push(processedPost);
+                } catch (error) {
+                    console.error(`Error processing blog post ID ${post.id}:`, error);
+                    // Include the post with error flag but don't break the whole response
+                    processedPosts.push({
+                        ...post,
+                        id: `error_processing_${post.id}`,
+                        processing_error: true,
+                        error_message: error.message
+                    });
+                }
+            }
+            
             // Pagination metadata
             const pagination = {
                 current_page: page,
@@ -746,23 +793,24 @@ const blogPostController = {
                 has_next: page < totalPages,
                 has_prev: page > 1
             };
-
-            // Applied filters for response
+            
+            // Applied filters for response - use encrypted IDs for the response
             const appliedFilters = {
                 sort_by: sort_by,
                 sort_order: sort_order,
                 search: search || null,
-                category_id: category_id || null,
-                author_id: author_id || null
+                category_id: req.query.category_id || null, // Return the encrypted ID as received
+                author_id: req.query.author_id || null // Return the encrypted ID as received
             };
-
+            
             res.status(200).json({
                 status: 200,
                 message: 'Blog posts retrieved successfully',
-                
+                data: {
                     blog_posts: processedPosts,
                     pagination: pagination,
                     filters: appliedFilters
+                }
             });
         } catch (err) {
             console.error('getAll blog posts error:', err);

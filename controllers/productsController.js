@@ -64,10 +64,10 @@ const { encryptId, decryptId } = require('../models/encryption.js');
 module.exports = {
     /**
      * @swagger
-     * /api/products:
+     * /api/blog-posts/lists:
      *   get:
-     *     summary: Get all products with optional filtering and pagination
-     *     tags: [Products]
+     *     summary: Get all blog posts with optional filtering and pagination
+     *     tags: [Blog Posts]
      *     parameters:
      *       - in: query
      *         name: page
@@ -80,42 +80,22 @@ module.exports = {
      *         schema:
      *           type: integer
      *           default: 10
-     *         description: Number of products per page
+     *         description: Number of blog posts per page
      *       - in: query
      *         name: category
      *         schema:
-     *           type: integer
-     *         description: Filter by category ID
+     *           type: string
+     *         description: Filter by category
      *       - in: query
      *         name: keyword
      *         schema:
      *           type: string
-     *         description: Keyword to search in product name or description
-     *       - in: query
-     *         name: sort_by
-     *         schema:
-     *           type: string
-     *           enum: [popular, newest, price_asc, price_desc]
-     *           default: newest
-     *         description: Sort products by criteria popular (highest rating), newest (created_at), price_asc (low to high), price_desc (high to low)
+     *         description: Search keyword in title or content
      *     responses:
      *       200:
-     *         description: List of products with pagination
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 products:
-     *                   type: array
-     *                   items:
-     *                     $ref: '#/components/schemas/Product'
-     *                 page:
-     *                   type: integer
-     *                   description: Current page number
-     *                 limit:
-     *                   type: integer
-     *                   description: Number of products per page
+     *         description: List of blog posts
+     *       500:
+     *         description: Server error
      */
     getAll: async (req, res) => {
         try {
@@ -124,67 +104,98 @@ module.exports = {
             const limit = parseInt(req.query.limit, 10) || 10;
             const category = req.query.category || null;
             const keyword = req.query.keyword || null;
-            const sortBy = req.query.sort_by || 'newest';
-
             const offset = (page - 1) * limit;
 
-            let query = knex('products')
-            .join('categories', 'products.category_id', 'categories.id')
-            .whereNull('products.deleted_at')
-            .select(
-                'products.*',
-                'categories.name as category_name'
-            );
+            // Build base query
+            let query = knex('blog_posts')
+                .whereNull('deleted_at')
+                .orderBy('created_at', 'desc');
 
-            // Filter by category_id if provided
+            // Apply filters if provided
             if (category) {
-            query = query.where('products.category_id', category);
+                query = query.where('category', category);
             }
 
-            // Filter by keyword in name or description if provided
             if (keyword) {
-            query = query.andWhere(function () {
-                this.where('products.name', 'ilike', `%${keyword}%`)
-                .orWhere('products.description', 'ilike', `%${keyword}%`);
-            });
+                query = query.andWhere(function() {
+                    this.where('title', 'ilike', `%${keyword}%`)
+                        .orWhere('content', 'ilike', `%${keyword}%`);
+                });
             }
 
-            // Sorting logic
-            switch (sortBy) {
-            case 'popular':
-                query = query.orderBy('products.rating', 'desc');
-                break;
-            case 'newest':
-                query = query.orderBy('products.created_at', 'desc');
-                break;
-            case 'price_asc':
-                query = query.orderBy('products.price', 'asc');
-                break;
-            case 'price_desc':
-                query = query.orderBy('products.price', 'desc');
-                break;
-            default:
-                query = query.orderBy('products.created_at', 'desc'); // default to newest
-                break;
-            }
+            // Clone query for counting total records
+            const countQuery = query.clone();
+            const totalResult = await countQuery.count('id as total').first();
+            const total = parseInt(totalResult.total);
 
-            // Pagination
+            // Apply pagination to main query
             query = query.limit(limit).offset(offset);
+            
+            // Execute the query
+            const blogPosts = await query;
 
-            const productsData = await query;
+            // Process the results - safely encrypt IDs
+            const processedPosts = [];
+            
+            for (const post of blogPosts) {
+                try {
+                    // Ensure post.id exists before encrypting
+                    if (post.id !== null && post.id !== undefined) {
+                        processedPosts.push({
+                            ...post,
+                            id: encryptId(post.id)
+                        });
+                    } else {
+                        // Handle posts with missing IDs
+                        console.warn('Blog post with missing ID found');
+                        processedPosts.push({
+                            ...post,
+                            id: null,
+                            id_error: 'Missing ID in database record'
+                        });
+                    }
+                } catch (error) {
+                    console.error(`Error processing blog post ID ${post.id}:`, error);
+                    // Still include the post but with an error flag
+                    processedPosts.push({
+                        ...post,
+                        id: `error_${post.id}`,
+                        id_error: error.message
+                    });
+                }
+            }
 
-            // Encrypt warranty IDs
-            const products = productsData.map(product => ({
-                ...product,
-                id: encryptId(product.id)
-            }));
-
-            res.json({ products, page, limit });
+            // Calculate pagination metadata
+            const totalPages = Math.ceil(total / limit);
+            
+            // Send successful response
+            res.status(200).json({
+                status: 200,
+                message: 'Blog posts retrieved successfully',
+                data: {
+                    blog_posts: processedPosts,
+                    pagination: {
+                        total,
+                        per_page: limit,
+                        current_page: page,
+                        last_page: totalPages,
+                        from: offset + 1,
+                        to: Math.min(offset + limit, total)
+                    }
+                }
+            });
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            console.error('getAll blog posts error:', err);
+            
+            // Send error response
+            res.status(500).json({
+                status: 500,
+                message: 'Error retrieving blog posts',
+                error: err.message
+            });
         }
     },
-
+ 
     /**
      * @swagger
      * /api/products/hot:

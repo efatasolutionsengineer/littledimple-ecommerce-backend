@@ -1249,26 +1249,213 @@ module.exports = {
      * @swagger
      * /api/orders:
      *   get:
-     *     summary: Get all orders
+     *     summary: Get all orders with filtering and pagination
      *     tags: [Orders]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *           default: 1
+     *         description: Page number
+     *       - in: query
+     *         name: limit
+     *         schema:
+     *           type: integer
+     *           default: 10
+     *         description: Number of items per page
+     *       - in: query
+     *         name: start_date
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Filter orders from this date (YYYY-MM-DD)
+     *       - in: query
+     *         name: end_date
+     *         schema:
+     *           type: string
+     *           format: date
+     *         description: Filter orders until this date (YYYY-MM-DD)
+     *       - in: query
+     *         name: status
+     *         schema:
+     *           type: string
+     *         description: Filter by order status (pending, processing, shipped, delivered, cancelled)
+     *       - in: query
+     *         name: payment_status
+     *         schema:
+     *           type: string
+     *         description: Filter by payment status (pending, paid, failed, refunded)
+     *       - in: query
+     *         name: user_id
+     *         schema:
+     *           type: string
+     *         description: Filter by encrypted user ID
+     *     responses:
+     *       200:
+     *         description: List of orders retrieved successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 200
+     *                 message:
+     *                   type: string
+     *                   example: Orders retrieved successfully
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     orders:
+     *                       type: array
+     *                       items:
+     *                         type: object
+     *                     pagination:
+     *                       type: object
+     *                       properties:
+     *                         total:
+     *                           type: integer
+     *                         per_page:
+     *                           type: integer
+     *                         current_page:
+     *                           type: integer
+     *                         last_page:
+     *                           type: integer
+     *                         from:
+     *                           type: integer
+     *                         to:
+     *                           type: integer
+     *       401:
+     *         description: Unauthorized - Invalid or missing token
+     *       403:
+     *         description: Forbidden - User doesn't have admin access
+     *       500:
+     *         description: Server error
      */
     getAllOrders: async (req, res) => {
         try {
-            const orders = await knex('orders')
-            .whereNull('deleted_at')
-            .select('*');
-
-            for (const order of orders) {
-            order.items = await knex('order_details')
-                .where({ order_id: order.id })
-                .whereNull('deleted_at');
+            // Get the authenticated user ID
+            const user_id = decryptId(req.user.id);
+            
+            // Pagination parameters
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+            const offset = (page - 1) * limit;
+            
+            // Filter parameters
+            const { start_date, end_date, status, payment_status } = req.query;
+            
+            // Build base query with join to users table
+            let query = knex('orders')
+                .join('users', 'orders.user_id', '=', 'users.id')
+                .whereNull('orders.deleted_at')
+                .select(
+                    'orders.*',
+                    'users.name as user_name',
+                    'users.email as user_email'
+                );
+            
+            // Apply filters
+            if (start_date) {
+                query = query.where('orders.created_at', '>=', `${start_date} 00:00:00`);
             }
-
-            res.json({ orders });
+            
+            if (end_date) {
+                query = query.where('orders.created_at', '<=', `${end_date} 23:59:59`);
+            }
+            
+            if (status) {
+                query = query.where('orders.status', status);
+            }
+            
+            if (payment_status) {
+                query = query.where('orders.payment_status', payment_status);
+            }
+            
+            if (user_id) {
+                query = query.where('orders.user_id', user_id);
+            }
+            
+            // Get total count for pagination
+            const countQuery = query.clone();
+            const totalResult = await countQuery.count('orders.id as total').first();
+            const total = parseInt(totalResult.total);
+            
+            // Execute main query with pagination
+            const orders = await query
+                .orderBy('orders.created_at', 'desc')
+                .limit(limit)
+                .offset(offset);
+            
+            // Process orders
+            const processedOrders = [];
+            for (const order of orders) {
+                // Get order items
+                const orderItems = await knex('order_details')
+                    .where({ order_id: order.id })
+                    .whereNull('deleted_at');
+                    
+                // Process each order
+                const processedOrder = {
+                    id: encryptId(order.id),
+                    user_id: encryptId(order.user_id),
+                    user_name: order.user_name,
+                    user_email: order.user_email,
+                    order_number: order.order_number,
+                    status: order.status,
+                    total_amount: parseFloat(order.total_amount),
+                    shipping_address: order.shipping_address,
+                    billing_address: order.billing_address,
+                    payment_method: order.payment_method,
+                    payment_status: order.payment_status,
+                    shipping_method: order.shipping_method,
+                    tracking_number: order.tracking_number,
+                    notes: order.notes,
+                    created_at: order.created_at,
+                    updated_at: order.updated_at,
+                    items: orderItems.map(item => ({
+                        id: item.id,
+                        product_id: encryptId(item.product_id),
+                        quantity: item.quantity,
+                        price: parseFloat(item.price),
+                        subtotal: parseFloat(item.subtotal || (item.price * item.quantity))
+                    }))
+                };
+                
+                processedOrders.push(processedOrder);
+            }
+            
+            // Calculate pagination info
+            const last_page = Math.ceil(total / limit);
+            
+            res.status(200).json({
+                status: 200,
+                message: 'Orders retrieved successfully',
+                data: {
+                    orders: processedOrders,
+                    pagination: {
+                        total: total,
+                        per_page: limit,
+                        current_page: page,
+                        last_page: last_page,
+                        from: offset + 1,
+                        to: Math.min(offset + limit, total)
+                    }
+                }
+            });
         } catch (err) {
-            res.status(500).json({ message: err.message });
+            console.error('getAllOrders error:', err);
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                error: err.message
+            });
         }
-    },
+},
 
     /**
      * @swagger
@@ -1456,7 +1643,6 @@ module.exports = {
             const user_id = decryptId(req.user.id);
             const { order_id } = req.params;
             const include_product_info = req.query.include_product_info === 'true';
-
             // Validate and decrypt order ID
             let decrypted_order_id;
             try {
@@ -1465,46 +1651,43 @@ module.exports = {
                 return res.status(400).json({
                     status: 400,
                     message: 'Invalid order ID format',
-                    data: null
-                });
+                    });
             }
-
             // Verify that the order belongs to the authenticated user
             const order = await knex('orders')
                 .where('id', decrypted_order_id)
-                .where('user_id', user_id)
                 .whereNull('deleted_at')
                 .first();
-
-            if (!order) {
+            
+            // admin check
+            const isAdmin = await knex('admins')
+            .where({ user_id })
+            .whereNull('deleted_at')
+            .first();
+            if (!isAdmin && (!order || order.user_id !== user_id)) {
                 return res.status(404).json({
                     status: 404,
                     message: 'Order not found or access denied',
                     data: null
                 });
             }
-
             // Get order details
             let orderDetailsQuery = knex('order_details')
                 .where('order_id', decrypted_order_id)
                 .whereNull('deleted_at')
                 .select('*')
                 .orderBy('id');
-
             const orderDetails = await orderDetailsQuery;
-
             if (orderDetails.length === 0) {
                 return res.status(404).json({
                     status: 404,
                     message: 'No order details found for this order',
-                    });
+                });
             }
-
             // Process order details and optionally include product info
             let processedDetails = [];
             let totalQuantity = 0;
             let totalAmount = 0;
-
             for (const detail of orderDetails) {
                 let processedDetail = {
                     id: detail.id,
@@ -1515,7 +1698,6 @@ module.exports = {
                     subtotal: parseFloat(detail.subtotal || (detail.price * detail.quantity)),
                     created_at: detail.created_at
                 };
-
                 // Include product information if requested
                 if (include_product_info) {
                     try {
@@ -1524,7 +1706,6 @@ module.exports = {
                             .whereNull('deleted_at')
                             .select('id', 'name', 'description', 'image_url', 'category', 'sku')
                             .first();
-
                         if (product) {
                             processedDetail.product_info = {
                                 id: encryptId(product.id),
@@ -1549,13 +1730,11 @@ module.exports = {
                         processedDetail.product_info = null;
                     }
                 }
-
                 totalQuantity += detail.quantity;
                 totalAmount += parseFloat(detail.subtotal || (detail.price * detail.quantity));
                 
                 processedDetails.push(processedDetail);
             }
-
             // Prepare summary
             const summary = {
                 total_items: processedDetails.length,
@@ -1563,16 +1742,32 @@ module.exports = {
                 total_amount: totalAmount
             };
 
+            // Process order data to include in response
+            const processedOrder = order ? {
+                id: encryptId(order.id),
+                user_id: encryptId(order.user_id),
+                order_number: order.order_number,
+                status: order.status,
+                total_amount: parseFloat(order.total_amount),
+                shipping_address: order.shipping_address,
+                billing_address: order.billing_address,
+                payment_method: order.payment_method,
+                payment_status: order.payment_status,
+                shipping_method: order.shipping_method,
+                tracking_number: order.tracking_number,
+                notes: order.notes,
+                created_at: order.created_at,
+                updated_at: order.updated_at
+            } : null;
+
             res.status(200).json({
                 status: 200,
                 message: 'Order details retrieved successfully',
-                data: {
+                order: processedOrder,
                     order_id: order_id,
                     order_details: processedDetails,
                     summary: summary
-                }
             });
-
         } catch (err) {
             console.error('getOrderDetails error:', err);
             
@@ -1583,7 +1778,6 @@ module.exports = {
                     data: null
                 });
             }
-
             res.status(500).json({
                 status: 500,
                 message: 'Internal server error',
@@ -1746,6 +1940,229 @@ module.exports = {
 
         } catch (err) {
             console.error('getAllOrderDetails error:', err);
+            res.status(500).json({
+                status: 500,
+                message: 'Internal server error',
+                error: err.message
+            });
+        }
+    },
+
+    /**
+     * @swagger
+     * /api/orders/status/{order_id}:
+     *   put:
+     *     summary: Update order status, tracking number, or payment status
+     *     tags: [Orders]
+     *     security:
+     *       - bearerAuth: []
+     *     parameters:
+     *       - in: path
+     *         name: order_id
+     *         required: true
+     *         schema:
+     *           type: string
+     *         description: Encrypted ID of the order to update
+     *     requestBody:
+     *       required: true
+     *       content:
+     *         application/json:
+     *           schema:
+     *             type: object
+     *             properties:
+     *               status:
+     *                 type: string
+     *                 enum: [pending, processing, shipped, delivered, cancelled]
+     *                 description: New order status
+     *               payment_status:
+     *                 type: string
+     *                 enum: [pending, paid, failed, refunded, cancelled]
+     *                 description: New payment status
+     *               tracking_number:
+     *                 type: string
+     *                 description: Shipping tracking number
+     *               payment_cancel_reason:
+     *                 type: string
+     *                 description: Reason for payment cancellation (required when status or payment_status is cancelled)
+     *             example:
+     *               status: shipped
+     *               tracking_number: TRACK123456789
+     *     responses:
+     *       200:
+     *         description: Order status updated successfully
+     *         content:
+     *           application/json:
+     *             schema:
+     *               type: object
+     *               properties:
+     *                 status:
+     *                   type: integer
+     *                   example: 200
+     *                 message:
+     *                   type: string
+     *                   example: Order status updated successfully
+     *                 data:
+     *                   type: object
+     *                   properties:
+     *                     order:
+     *                       type: object
+     *       400:
+     *         description: Invalid input or request
+     *       401:
+     *         description: Unauthorized - Invalid or missing token
+     *       403:
+     *         description: Forbidden - User doesn't have admin access
+     *       404:
+     *         description: Order not found
+     *       500:
+     *         description: Server error
+     */
+    updateOrderStatus: async (req, res) => {
+        try {
+            // Get authenticated user ID
+            // const user_id = decryptId(req.user.id);
+            
+            // Decrypt and validate order ID
+            const { order_id } = req.params;
+            let decrypted_order_id;
+            
+            try {
+                decrypted_order_id = decryptId(order_id);
+            } catch (decryptError) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid order ID format',
+                });
+            }
+            
+            // Get request body data
+            const { 
+                status, 
+                payment_status, 
+                tracking_number,
+                payment_cancel_reason
+            } = req.body;
+            
+            // Validate at least one field to update is provided
+            if (!status && !payment_status && !tracking_number) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'At least one of status, payment_status, or tracking_number must be provided',
+                });
+            }
+            
+            // Validate status value if provided
+            if (status && !['pending', 'processing', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid status value. Must be one of: pending, processing, shipped, delivered, cancelled',
+                });
+            }
+            
+            // Validate payment_status value if provided
+            if (payment_status && !['pending', 'paid', 'failed', 'refunded', 'cancelled'].includes(payment_status)) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Invalid payment_status value. Must be one of: pending, paid, failed, refunded, cancelled',
+                });
+            }
+            
+            // If status or payment_status is cancelled, payment_cancel_reason is required
+            if ((status === 'cancelled' || payment_status === 'cancelled') && !payment_cancel_reason) {
+                return res.status(400).json({
+                    status: 400,
+                    message: 'Payment cancel reason is required when cancelling an order',
+                });
+            }
+            
+            // Check if order exists
+            const existingOrder = await knex('orders')
+                .where('id', decrypted_order_id)
+                .whereNull('deleted_at')
+                .first();
+                
+            if (!existingOrder) {
+                return res.status(404).json({
+                    status: 404,
+                    message: 'Order not found',
+                });
+            }
+            
+            // Prepare update data
+            const updateData = {};
+            
+            if (status) updateData.status = status;
+            if (payment_status) updateData.payment_status = payment_status;
+            if (tracking_number) updateData.tracking_number = tracking_number;
+            if (payment_cancel_reason) updateData.payment_cancel_reason = payment_cancel_reason;
+            
+            // Add updated timestamp
+            updateData.updated_at = knex.fn.now();
+            
+            // Update the order
+            await knex('orders')
+                .where('id', decrypted_order_id)
+                .update(updateData);
+                
+            // Get updated order data
+            const updatedOrder = await knex('orders')
+                .where('id', decrypted_order_id)
+                .first();
+                
+            // Process order data for response
+            const processedOrder = {
+                id: encryptId(updatedOrder.id),
+                user_id: encryptId(updatedOrder.user_id),
+                status: updatedOrder.status,
+                order_date: updatedOrder.order_date,
+                total_price: parseFloat(updatedOrder.total_price),
+                coupon_code: updatedOrder.coupon_code,
+                discount_amount: updatedOrder.discount_amount ? parseFloat(updatedOrder.discount_amount) : null,
+                receiver_address: updatedOrder.receiver_address,
+                shipping_service: updatedOrder.shipping_service,
+                shipping_cost: updatedOrder.shipping_cost ? parseFloat(updatedOrder.shipping_cost) : null,
+                shipping_etd: updatedOrder.shipping_etd,
+                receiver_name: updatedOrder.receiver_name,
+                receiver_phone: updatedOrder.receiver_phone,
+                receiver_address_detail: updatedOrder.receiver_address_detail,
+                receiver_subdistrict_id: updatedOrder.receiver_subdistrict_id,
+                receiver_subdistrict_name: updatedOrder.receiver_subdistrict_name,
+                payment_transaction_id: updatedOrder.payment_transaction_id,
+                payment_contract_id: updatedOrder.payment_contract_id,
+                payment_method: updatedOrder.payment_method,
+                payment_method_channel: updatedOrder.payment_method_channel,
+                payment_status: updatedOrder.payment_status,
+                payment_cancel_reason: updatedOrder.payment_cancel_reason,
+                tracking_number: updatedOrder.tracking_number,
+                receiver_district_id: updatedOrder.receiver_district_id,
+                receiver_district_name: updatedOrder.receiver_district_name,
+                receiver_city_id: updatedOrder.receiver_city_id,
+                receiver_city_name: updatedOrder.receiver_city_name,
+                receiver_state_id: updatedOrder.receiver_state_id,
+                receiver_state_name: updatedOrder.receiver_state_name,
+                receiver_zip_code: updatedOrder.receiver_zip_code,
+                origin_id: updatedOrder.origin_id,
+                destination_id: updatedOrder.destination_id,
+                shipping_name: updatedOrder.shipping_name,
+                shipping_code: updatedOrder.shipping_code,
+                shipping_description: updatedOrder.shipping_description,
+                shipping_weight: updatedOrder.shipping_weight,
+                final_shipping_cost: updatedOrder.final_shipping_cost ? parseFloat(updatedOrder.final_shipping_cost) : null,
+                grand_total: updatedOrder.grand_total ? parseFloat(updatedOrder.grand_total) : null,
+                updated_at: updatedOrder.updated_at
+            };
+            
+            // Send success response
+            res.status(200).json({
+                status: 200,
+                message: 'Order status updated successfully',
+                data: {
+                    order: processedOrder
+                }
+            });
+            
+        } catch (err) {
+            console.error('updateOrderStatus error:', err);
             res.status(500).json({
                 status: 500,
                 message: 'Internal server error',
