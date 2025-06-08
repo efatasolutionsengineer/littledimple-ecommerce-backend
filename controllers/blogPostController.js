@@ -1726,6 +1726,52 @@ const blogPostController = {
 
     /**
      * @swagger
+     * components:
+     *   schemas:
+     *     BlogRequestTopicInput:
+     *       type: object
+     *       required:
+     *         - name
+     *         - email
+     *         - message
+     *       properties:
+     *         name:
+     *           type: string
+     *           description: Requester's name
+     *           example: "John Doe"
+     *         email:
+     *           type: string
+     *           description: Requester's email address
+     *           example: "john.doe@example.com"
+     *         message:
+     *           type: string
+     *           description: Topic request message
+     *           example: "I would like to see a blog post about baby sleep patterns."
+     *     BlogRequestTopic:
+     *       type: object
+     *       properties:
+     *         id:
+     *           type: string
+     *           description: Encrypted ID
+     *           example: "encrypted_id_string"
+     *         name:
+     *           type: string
+     *           example: "John Doe"
+     *         email:
+     *           type: string
+     *           example: "john.doe@example.com"
+     *         message:
+     *           type: string
+     *           example: "I would like to see a blog post about baby sleep patterns."
+     *         created_at:
+     *           type: string
+     *           format: date-time
+     *           example: "2023-12-01T10:00:00Z"
+     *         updated_at:
+     *           type: string
+     *           format: date-time
+     *           example: "2023-12-01T10:00:00Z"
+     * 
      * /api/blog-posts/request-topic:
      *   post:
      *     summary: Create a new blog topic request
@@ -1778,24 +1824,19 @@ const blogPostController = {
     createRequest: async (req, res) => {
         try {
             const { name, email, message } = req.body;
-
             // Validation
             const errors = [];
-
             if (!name || typeof name !== 'string' || name.trim().length < 2) {
                 errors.push('Name is required and must be at least 2 characters long');
             }
-
             if (!email || typeof email !== 'string') {
                 errors.push('Email is required');
             } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
                 errors.push('Email format is invalid');
             }
-
             if (!message || typeof message !== 'string' || message.trim().length < 10) {
                 errors.push('Message is required and must be at least 10 characters long');
             }
-
             if (errors.length > 0) {
                 return res.status(400).json({
                     status: 400,
@@ -1803,7 +1844,6 @@ const blogPostController = {
                     data: { errors }
                 });
             }
-
             // Create request
             const [newRequest] = await knex('blogs_request_topic')
                 .insert({
@@ -1814,18 +1854,15 @@ const blogPostController = {
                     updated_at: knex.fn.now()
                 })
                 .returning('*');
-
             // Encrypt ID in response
             const response = {
                 ...newRequest,
                 id: encryptId(newRequest.id)
             };
-
             res.status(201).json({
                 status: 201,
                 message: 'Blog topic request submitted successfully',
                 });
-
         } catch (err) {
             console.error('createRequest error:', err);
             res.status(500).json({

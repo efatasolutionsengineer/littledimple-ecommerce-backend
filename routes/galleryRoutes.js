@@ -25,12 +25,13 @@ const upload = multer({
 router.get('/', galleryController.getAllMedia);
 router.get('/:id', galleryController.getMediaById);
 router.get('/slug/:slug', galleryController.getMediaBySlug);
-router.get('/stream/:id', galleryController.streamVideo);
 router.get('/refresh/:id', galleryController.refreshMediaUrls);
 
 // Protected routes (require authentication)
 router.post('/upload', upload.array('files', 10), galleryController.uploadMedia);
+
 router.use(authMiddleware);
+router.get('/stream/:id', galleryController.streamVideo);
 router.put('/:id', galleryController.updateMedia);
 router.delete('/:id', galleryController.deleteMedia);
 
