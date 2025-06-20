@@ -78,7 +78,7 @@ module.exports = {
           'categories.name',
           'categories.description',
           'categories.media_id',
-          'media_gallery.url as gallery_url'
+          'media_gallery.image_high as gallery_url'
         )
         .whereNull('categories.deleted_at');
       
@@ -146,7 +146,7 @@ module.exports = {
           'categories.name',
           'categories.description',
           'categories.media_id',
-          'media_gallery.url as gallery_url'
+          'media_gallery.image_high as gallery_url'
         )
         .where('categories.id', categoryId)
         .whereNull('categories.deleted_at')
