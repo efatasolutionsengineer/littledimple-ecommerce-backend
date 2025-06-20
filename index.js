@@ -55,7 +55,7 @@ const swaggerOptions = {
           description: 
           'API documentation for Website' + 
           '<div style="margin-top: 20px;">' + 
-          '<a href="/swagger.json" download style="background-color: #4990e2; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">Download Swagger JSON</a>' +
+          '<a href="/openapi-little-dimple.json" download style="background-color: #4990e2; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">Download Swagger JSON</a>' +
           '</div>',
           contact: {
             name: "Backend Developer",
@@ -93,7 +93,7 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
 // Serve OpenAPI JSON
-app.get('/openapi.json', (req, res) => {
+app.get('/openapi-little-dimple.json', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(swaggerDocs);
 });
@@ -122,7 +122,7 @@ app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
 
 // Optional: Save to file on startup (useful for CI or documentation portals)
 fs.writeFileSync(
-  path.join(__dirname, 'openapi.json'),
+  path.join(__dirname, 'openapi-little-dimple.json'),
   JSON.stringify(swaggerDocs, null, 2)
 );
 
