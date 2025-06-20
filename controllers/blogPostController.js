@@ -418,405 +418,131 @@ const blogPostController = {
      * @swagger
      * /api/blog-posts/lists:
      *   get:
-     *     summary: Get all blog posts with pagination, sorting, and search
-     *     tags: [BlogPosts]
+     *     summary: Get all blog posts with optional filtering and pagination
+     *     tags: [Blog Posts]
      *     parameters:
      *       - in: query
      *         name: page
      *         schema:
      *           type: integer
-     *           minimum: 1
      *           default: 1
-     *         description: Page number
-     *         example: 1
+     *         description: Page number for pagination
      *       - in: query
      *         name: limit
      *         schema:
      *           type: integer
-     *           minimum: 1
-     *           maximum: 100
      *           default: 10
-     *         description: Number of items per page
-     *         example: 10
+     *         description: Number of blog posts per page
      *       - in: query
-     *         name: sort_by
+     *         name: category
      *         schema:
      *           type: string
-     *           enum: [title, created_at, updated_at, author_id, category_id]
-     *           default: created_at
-     *         description: Sort by field
-     *         example: "title"
+     *         description: Filter by category
      *       - in: query
-     *         name: sort_order
+     *         name: keyword
      *         schema:
      *           type: string
-     *           enum: [asc, desc]
-     *           default: desc
-     *         description: Sort order
-     *         example: "desc"
-     *       - in: query
-     *         name: search
-     *         schema:
-     *           type: string
-     *         description: Search across title, content, and slug
-     *         example: "technology"
-     *       - in: query
-     *         name: category_id
-     *         schema:
-     *           type: string
-     *         description: Filter by encrypted category ID
-     *         example: "encrypted_category_id"
-     *       - in: query
-     *         name: author_id
-     *         schema:
-     *           type: string
-     *         description: Filter by encrypted author ID
-     *         example: "encrypted_author_id"
+     *         description: Search keyword in title or content
      *     responses:
      *       200:
-     *         description: Blog posts retrieved successfully
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 status:
-     *                   type: integer
-     *                   example: 200
-     *                 message:
-     *                   type: string
-     *                   example: "Blog posts retrieved successfully"
-     *                 data:
-     *                   type: object
-     *                   properties:
-     *                     blog_posts:
-     *                       type: array
-     *                       items:
-     *                         type: object
-     *                         properties:
-     *                           id:
-     *                             type: string
-     *                             description: Encrypted blog post ID
-     *                             example: "encrypted_blog_id"
-     *                           title:
-     *                             type: string
-     *                             example: "How to Build a REST API"
-     *                           slug:
-     *                             type: string
-     *                             example: "how-to-build-rest-api"
-     *                           content:
-     *                             type: string
-     *                             example: "In this comprehensive guide, we will explore..."
-     *                           image_main_url:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "https://example.com/images/main.jpg"
-     *                           image_thumbnail_url:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "https://example.com/images/thumb.jpg"
-     *                           image_banner_url:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "https://example.com/images/banner.jpg"
-     *                           image_meta_url:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "https://example.com/images/meta.jpg"
-     *                           category_id:
-     *                             type: string
-     *                             nullable: true
-     *                             description: Encrypted category ID
-     *                             example: "encrypted_category_id"
-     *                           author_id:
-     *                             type: string
-     *                             nullable: true
-     *                             description: Encrypted author ID
-     *                             example: "encrypted_author_id"
-     *                           category_name:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "Technology"
-     *                           author_name:
-     *                             type: string
-     *                             nullable: true
-     *                             example: "John Doe"
-     *                           created_at:
-     *                             type: string
-     *                             format: date-time
-     *                             example: "2023-11-15T10:30:00Z"
-     *                           updated_at:
-     *                             type: string
-     *                             format: date-time
-     *                             example: "2023-11-15T10:30:00Z"
-     *                     pagination:
-     *                       type: object
-     *                       properties:
-     *                         current_page:
-     *                           type: integer
-     *                           example: 1
-     *                         per_page:
-     *                           type: integer
-     *                           example: 10
-     *                         total:
-     *                           type: integer
-     *                           example: 50
-     *                         total_pages:
-     *                           type: integer
-     *                           example: 5
-     *                         has_next:
-     *                           type: boolean
-     *                           example: true
-     *                         has_prev:
-     *                           type: boolean
-     *                           example: false
-     *                     filters:
-     *                       type: object
-     *                       properties:
-     *                         sort_by:
-     *                           type: string
-     *                           example: "created_at"
-     *                         sort_order:
-     *                           type: string
-     *                           example: "desc"
-     *                         search:
-     *                           type: string
-     *                           nullable: true
-     *                           example: "technology"
-     *                         category_id:
-     *                           type: string
-     *                           nullable: true
-     *                           example: "encrypted_category_id"
-     *                         author_id:
-     *                           type: string
-     *                           nullable: true
-     *                           example: "encrypted_author_id"
-     *       400:
-     *         description: Bad request - invalid parameters
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 status:
-     *                   type: integer
-     *                   example: 400
-     *                 message:
-     *                   type: string
-     *                   example: "Invalid sort_by field or sort_order"
-     *                 data:
-     *                   type: null
+     *         description: List of blog posts
      *       500:
-     *         description: Internal server error
-     *         content:
-     *           application/json:
-     *             schema:
-     *               type: object
-     *               properties:
-     *                 status:
-     *                   type: integer
-     *                   example: 500
-     *                 message:
-     *                   type: string
-     *                   example: "Internal server error"
-     *                 error:
-     *                   type: string
-     *                   example: "Database connection failed"
+     *         description: Server error
      */
     getAll: async (req, res) => {
         try {
-            // Pagination parameters
-            const page = parseInt(req.query.page) || 1;
-            const limit = parseInt(req.query.limit) || 10;
+            // Parse query params with defaults
+            const page = parseInt(req.query.page, 10) || 1;
+            const limit = parseInt(req.query.limit, 10) || 10;
+            const category = req.query.category || null;
+            const keyword = req.query.keyword || null;
             const offset = (page - 1) * limit;
-            
-            // Sorting parameters
-            const sort_by = req.query.sort_by || 'created_at';
-            const sort_order = req.query.sort_order || 'desc';
-            
-            // Filter parameters
-            const search = req.query.search;
-            
-            // Safely handle category_id and author_id decryption
-            let category_id = null;
-            let author_id = null;
-            
-            if (req.query.category_id) {
-                try {
-                    category_id = decryptId(req.query.category_id);
-                } catch (err) {
-                    console.warn('Invalid category_id format:', err.message);
-                    return res.status(400).json({
-                        status: 400,
-                        message: 'Invalid category ID format',
-                        });
-                }
+
+            // Build base query
+            let query = knex('blog_posts')
+                .whereNull('deleted_at')
+                .orderBy('created_at', 'desc');
+
+            // Apply filters if provided
+            if (category) {
+                query = query.where('category', category);
             }
-            
-            if (req.query.author_id) {
-                try {
-                    author_id = decryptId(req.query.author_id);
-                } catch (err) {
-                    console.warn('Invalid author_id format:', err.message);
-                    return res.status(400).json({
-                        status: 400,
-                        message: 'Invalid author ID format',
-                        data: null
-                    });
-                }
-            }
-            
-            // Validate pagination parameters
-            if (page < 1) {
-                return res.status(400).json({
-                    status: 400,
-                    message: 'Page must be greater than 0',
-                    data: null
+
+            if (keyword) {
+                query = query.andWhere(function() {
+                    this.where('title', 'ilike', `%${keyword}%`)
+                        .orWhere('content', 'ilike', `%${keyword}%`);
                 });
             }
+
+            // Clone query for counting total records
+            const countQuery = query.clone();
+            const totalResult = await countQuery.count('id as total').first();
+            const total = parseInt(totalResult.total);
+
+            // Apply pagination to main query
+            query = query.limit(limit).offset(offset);
             
-            if (limit < 1 || limit > 100) {
-                return res.status(400).json({
-                    status: 400,
-                    message: 'Limit must be between 1 and 100',
-                    data: null
-                });
-            }
-            
-            // Validate sort parameters
-            const validSortFields = ['title', 'created_at', 'updated_at', 'author_id', 'category_id'];
-            const validSortOrders = ['asc', 'desc'];
-            
-            if (!validSortFields.includes(sort_by)) {
-                return res.status(400).json({
-                    status: 400,
-                    message: `Invalid sort by field. Must be one of: ${validSortFields.join(', ')}`,
-                    data: null
-                });
-            }
-            
-            if (!validSortOrders.includes(sort_order)) {
-                return res.status(400).json({
-                    status: 400,
-                    message: 'Invalid sort order. Must be: asc or desc',
-                    });
-            }
-            
-            // Build base query with joins for category and author names
-            // Changed to use blog_categories instead of categories
-            let baseQuery = knex('blog_posts as bp')
-                .leftJoin('blog_categories as bc', 'bp.category_id', 'bc.id')
-                .leftJoin('users as u', 'bp.author_id', 'u.id')
-                .whereNull('bp.deleted_at')
-                .whereNull('bc.deleted_at'); // Add check for deleted categories
-            
-            // Apply search filter
-            if (search) {
-                baseQuery = baseQuery.where(function() {
-                    this.where('bp.title', 'ilike', `%${search}%`)
-                        .orWhere('bp.content', 'ilike', `%${search}%`)
-                        .orWhere('bp.slug', 'ilike', `%${search}%`);
-                });
-            }
-            
-            // Apply category filter
-            if (category_id) {
-                baseQuery = baseQuery.where('bp.category_id', category_id);
-            }
-            
-            // Apply author filter
-            if (author_id) {
-                baseQuery = baseQuery.where('bp.author_id', author_id);
-            }
-            
-            // Get total count for pagination
-            const totalCount = await baseQuery.clone()
-                .count('bp.id as count')
-                .first();
-            
-            const total = parseInt(totalCount ? totalCount.count : 0);
-            const totalPages = Math.ceil(total / limit);
-            
-            // Get blog posts with pagination and sorting
-            const blogPosts = await baseQuery.clone()
-                .select(
-                    'bp.*',
-                    'bc.name as category_name', // Changed from c.name to bc.name
-                    'u.full_name as author_name'
-                )
-                .orderBy(`bp.${sort_by}`, sort_order)
-                .limit(limit)
-                .offset(offset);
-            
-            // Process and encrypt IDs with proper error handling
+            // Execute the query
+            const blogPosts = await query;
+
+            // Process the results - safely encrypt IDs
             const processedPosts = [];
             
             for (const post of blogPosts) {
                 try {
-                    // Create a processed post with encrypted IDs and proper null checks
-                    const processedPost = {
-                        id: post.id ? encryptId(post.id) : null,
-                        title: post.title,
-                        slug: post.slug,
-                        content: post.content,
-                        image_main_url: post.image_main_url,
-                        image_thumbnail_url: post.image_thumbnail_url,
-                        image_banner_url: post.image_banner_url,
-                        image_meta_url: post.image_meta_url,
-                        category_id: post.category_id ? encryptId(post.category_id) : null,
-                        author_id: post.author_id ? encryptId(post.author_id) : null,
-                        category_name: post.category_name,
-                        author_name: post.author_name,
-                        created_at: post.created_at,
-                        updated_at: post.updated_at
-                    };
-                    
-                    processedPosts.push(processedPost);
+                    // Ensure post.id exists before encrypting
+                    if (post.id !== null && post.id !== undefined) {
+                        processedPosts.push({
+                            ...post,
+                            id: encryptId(post.id)
+                        });
+                    } else {
+                        // Handle posts with missing IDs
+                        console.warn('Blog post with missing ID found');
+                        processedPosts.push({
+                            ...post,
+                            id: null,
+                            id_error: 'Missing ID in database record'
+                        });
+                    }
                 } catch (error) {
                     console.error(`Error processing blog post ID ${post.id}:`, error);
-                    // Include the post with error flag but don't break the whole response
+                    // Still include the post but with an error flag
                     processedPosts.push({
                         ...post,
-                        id: `error_processing_${post.id}`,
-                        processing_error: true,
-                        error_message: error.message
+                        id: `error_${post.id}`,
+                        id_error: error.message
                     });
                 }
             }
+
+            // Calculate pagination metadata
+            const totalPages = Math.ceil(total / limit);
             
-            // Pagination metadata
-            const pagination = {
-                current_page: page,
-                per_page: limit,
-                total: total,
-                total_pages: totalPages,
-                has_next: page < totalPages,
-                has_prev: page > 1
-            };
-            
-            // Applied filters for response - use encrypted IDs for the response
-            const appliedFilters = {
-                sort_by: sort_by,
-                sort_order: sort_order,
-                search: search || null,
-                category_id: req.query.category_id || null, // Return the encrypted ID as received
-                author_id: req.query.author_id || null // Return the encrypted ID as received
-            };
-            
+            // Send successful response
             res.status(200).json({
                 status: 200,
                 message: 'Blog posts retrieved successfully',
                 data: {
                     blog_posts: processedPosts,
-                    pagination: pagination,
-                    filters: appliedFilters
+                    pagination: {
+                        total,
+                        per_page: limit,
+                        current_page: page,
+                        last_page: totalPages,
+                        from: offset + 1,
+                        to: Math.min(offset + limit, total)
+                    }
                 }
             });
         } catch (err) {
             console.error('getAll blog posts error:', err);
+            
+            // Send error response
             res.status(500).json({
                 status: 500,
-                message: 'Internal server error',
+                message: 'Error retrieving blog posts',
                 error: err.message
             });
         }

@@ -5,7 +5,7 @@ const cookieParser = require('cookie-parser');
 const fs = require('fs');
 const path = require('path');
 
-const { initializeDb } = require("./db/knex");
+// const { initializeDb } = require("./db/knex");
 const { configureCors } = require("./config/cors");
 const { createRateLimiter } = require("./middleware/rateLimiter");
 
@@ -52,9 +52,26 @@ const swaggerOptions = {
         info: {
           title: 'E-Commerce API',
           version: '1.0.0',
-          description: 'API documentation for the E-Commerce platform'
+          description: 
+          'API documentation for Website' + 
+          '<div style="margin-top: 20px;">' + 
+          '<a href="/swagger.json" download style="background-color: #4990e2; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">Download Swagger JSON</a>' +
+          '</div>',
+          contact: {
+            name: "Backend Developer",
+            email: "ranomuhamad98@gmail.com",
+          }
         },
-        servers: [{ url: 'http://localhost:3300' }],
+        servers: [
+          {
+            url: process.env.API_URL || 'https://efatasolutionsdemo.web.id',
+            description: 'Production server',
+          },
+          {
+            url: process.env.API_URL_DEV || 'http://localhost:3300',
+            description: 'Development server',
+          },
+        ],
         components: {
           securitySchemes: {
             cookieAuth: {
@@ -86,7 +103,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 
 // Serve Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+app.use('/api/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
     customCss: `
       .swagger-ui .topbar .download-openapi-btn {
         margin-left: 15px;

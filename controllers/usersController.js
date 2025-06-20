@@ -121,7 +121,7 @@ module.exports = {
                 city_name,
                 subdistrict_id,
                 subdistrict_name,
-                dob, // <- Inserted into DB
+                dob, 
                 is_verified_email: false,
                 is_verified_phone: null,
             })
