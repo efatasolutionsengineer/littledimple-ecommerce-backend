@@ -533,8 +533,24 @@ module.exports = {
             }
             
             // Count total records for pagination
-            const countQuery = query.clone();
-            const totalResult = await countQuery.count('products.id as total').first();
+            const totalResult = await knex('products')
+                .join('categories', 'products.category_id', 'categories.id')
+                .whereNull('products.deleted_at')
+                .andWhere('products.label_1', 'hot')
+                .modify(function (qb) {
+                    if (categoryId !== null) {
+                        qb.where('products.category_id', categoryId);
+                    }
+                    if (keyword) {
+                        qb.andWhere(function () {
+                            this.where('products.name', 'ilike', `%${keyword}%`)
+                                .orWhere('products.description', 'ilike', `%${keyword}%`);
+                        });
+                    }
+                })
+                .count('products.id as total')
+                .first();
+
             const total = parseInt(totalResult.total);
             
             // Apply pagination
