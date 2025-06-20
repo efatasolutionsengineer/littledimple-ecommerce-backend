@@ -476,7 +476,20 @@ const blogPostController = {
             }
 
             // Clone query for counting total records
-            const countQuery = query.clone();
+            const countQuery = knex('blog_posts')
+                .whereNull('deleted_at');
+
+            if (category) {
+                countQuery.where('category', category);
+            }
+
+            if (keyword) {
+                countQuery.andWhere(function() {
+                    this.where('title', 'ilike', `%${keyword}%`)
+                        .orWhere('content', 'ilike', `%${keyword}%`);
+                });
+            }
+
             const totalResult = await countQuery.count('id as total').first();
             const total = parseInt(totalResult.total);
 
