@@ -390,7 +390,7 @@ module.exports = {
    *         name: id
    *         required: true
    *         schema:
-   *           type: integer
+   *           type: string
    *         description: Cart item ID
    *     responses:
    *       200:
@@ -401,7 +401,7 @@ module.exports = {
 
     try {
       await knex('cart')
-        .where({ id })
+        .where({ id: decryptId(id) })
         .update({ deleted_at: knex.fn.now() });
 
       res.json({ message: 'Cart item deleted (soft delete)' });
