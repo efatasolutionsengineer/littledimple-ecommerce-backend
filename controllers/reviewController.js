@@ -123,17 +123,23 @@ module.exports = {
 
       // Query reviews with optional product filter
       const reviewsQuery = knex('reviews')
-        // .where({ user_id })  // Uncomment if you want user filtering
-        .whereNull('deleted_at');
+        .join('products', 'reviews.product_id', 'products.id')
+        .join('users', 'reviews.user_id', 'users.id')
+        .whereNull('reviews.deleted_at');
 
       if (productId) {
-        reviewsQuery.andWhere('product_id', productId);
+        reviewsQuery.andWhere('reviews.product_id', productId);
       }
 
       const reviews = await reviewsQuery
+        .select(
+          'reviews.*',
+          'products.name as product_name',
+          'users.full_name as user_full_name'
+        )
         .limit(limit)
         .offset(offset)
-        .orderBy('created_at', 'desc');
+        .orderBy('reviews.created_at', 'desc');
 
       const total = parseInt(totalResult.count, 10);
       const totalPages = Math.ceil(total / limit);
@@ -199,17 +205,23 @@ module.exports = {
 
       // Query reviews with optional product filter
       const reviewsQuery = knex('reviews')
-        // .where({ user_id })  // Uncomment if you want user filtering
-        .whereNull('deleted_at');
+        .join('products', 'reviews.product_id', 'products.id')
+        .join('users', 'reviews.user_id', 'users.id')
+        .whereNull('reviews.deleted_at');
 
       if (productId) {
-        reviewsQuery.andWhere('product_id', productId);
+        reviewsQuery.andWhere('reviews.product_id', productId);
       }
 
       const reviews = await reviewsQuery
+        .select(
+          'reviews.*',
+          'products.name as product_name',
+          'users.full_name as user_full_name'
+        )
         .limit(limit)
         .offset(offset)
-        .orderBy('created_at', 'desc');
+        .orderBy('reviews.created_at', 'desc');
 
       const total = parseInt(totalResult.count, 10);
       const totalPages = Math.ceil(total / limit);
